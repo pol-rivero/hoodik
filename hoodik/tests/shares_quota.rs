@@ -94,9 +94,11 @@ async fn test_stats_breakdown_only_includes_own_files() {
     register_user!(app, context, bob, "bob@example.com");
 
     let file = create_file!(app, alice, "stats-breakdown");
+    create_folder!(app, alice, "stats-breakdown-folder");
     grant!(app, alice, bob, ShareRoleEnum::Reader, file.id);
 
     let alice_stats = stats_response!(app, alice);
+    assert_eq!(alice_stats["used_space"].as_i64().unwrap(), 1024);
     let alice_breakdown = alice_stats["stats"].as_array().unwrap();
     assert_eq!(alice_breakdown.len(), 1);
     assert_eq!(alice_breakdown[0]["count"].as_i64().unwrap(), 1);
