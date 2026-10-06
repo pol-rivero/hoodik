@@ -858,6 +858,14 @@
     "nextImage": "Sljedeća slika",
     "noPreview": "Pregled nije dostupan",
     "previousImage": "Prethodna slika",
+    "text": {
+      "binary": "Ova datoteka ne izgleda kao tekst.",
+      "lines": "{count} redak | {count} retka | {count} redaka",
+      "loadError": "Datoteku nije bilo moguće učitati: {error}",
+      "noWrap": "Ne prelamaj retke",
+      "truncated": "Prikazan je samo prvi {count} redak. Preuzmite datoteku za ostatak. | Prikazana su samo prva {count} retka. Preuzmite datoteku za ostatak. | Prikazano je samo prvih {count} redaka. Preuzmite datoteku za ostatak.",
+      "wrap": "Prelamaj duge retke"
+    },
     "versionHistory": {
       "authorAnonymous": "Anonimno",
       "authorOther": "Drugi suradnik",
