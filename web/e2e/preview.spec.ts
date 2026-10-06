@@ -7,6 +7,7 @@ const imageFixture = path.join(__dirname, 'fixtures', 'test-image.png')
 const imageFixture2 = path.join(__dirname, 'fixtures', 'test-image2.png')
 const pdfFixture = path.join(__dirname, 'fixtures', 'test.pdf')
 const videoFixture = path.join(__dirname, 'fixtures', 'test-video.mp4')
+const yamlFixture = path.join(__dirname, 'fixtures', 'sample-textlike-file.yaml')
 
 async function setup(page: Parameters<typeof createUser>[0]) {
   const email = randomEmail()
@@ -131,5 +132,28 @@ test.describe('Video preview', () => {
 
     // The <video> element should appear (MSE or blob URL mode)
     await expect(page.locator('video')).toBeVisible({ timeout: 20_000 })
+  })
+})
+
+test.describe('Text preview', () => {
+  test('shows a YAML file as numbered monospaced text', async ({ page }) => {
+    await setup(page)
+    await uploadAndWait(page, yamlFixture)
+
+    await page.getByTestId('file-row-sample-textlike-file.yaml').dblclick()
+    await expect(page).toHaveURL(/file-preview|\/p\//)
+
+    const viewer = page.getByTestId('preview-text')
+    await expect(viewer).toBeVisible({ timeout: 15_000 })
+    await expect(viewer.locator('.text-line')).toHaveCount(7)
+    await expect(viewer.locator('.text-line').nth(2)).toHaveText('  apple: red')
+    await expect(viewer).toContainText('7 lines')
+    await expect(page.getByTestId('preview-text-truncated')).toHaveCount(0)
+
+    const wrap = page.locator('[name="preview-text-wrap"]')
+    await expect(wrap).toHaveAttribute('aria-pressed', 'false')
+    await wrap.click()
+    await expect(wrap).toHaveAttribute('aria-pressed', 'true')
+    await expect(viewer.locator('.text-body')).toHaveClass(/is-wrapped/)
   })
 })
