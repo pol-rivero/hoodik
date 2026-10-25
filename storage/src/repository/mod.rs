@@ -2,11 +2,12 @@ pub(crate) mod cached;
 pub(crate) mod manage;
 pub(crate) mod query;
 pub(crate) mod tokens;
+pub(crate) mod trash;
 pub(crate) mod versions;
 
 use crate::data::app_file::AppFile;
 
-use self::{manage::Manage, query::Query, tokens::Tokens, versions::Versions};
+use self::{manage::Manage, query::Query, tokens::Tokens, trash::Trash, versions::Versions};
 use entity::{
     files, links, numeric::Numeric, user_files, users, ColumnTrait, ConnectionTrait, EntityTrait,
     Expr, IntoCondition, JoinType, QueryFilter, QuerySelect, RelationTrait, Select, Uuid, Value,
@@ -69,6 +70,14 @@ where
         Versions::<'repository>::new(self, owner_id)
     }
 
+    /// Move to trash, list, restore and mark for purge, as the owner sees it.
+    pub(crate) fn trash<'repository>(&'repository self, user_id: Uuid) -> Trash<'repository, T>
+    where
+        Self: 'repository,
+    {
+        Trash::<'repository>::new(self, user_id)
+    }
+
     /// Get the inner database connection
     pub(crate) fn connection(&self) -> &impl ConnectionTrait {
         self.connection
@@ -110,7 +119,7 @@ where
 
     /// Preset the selector for the given user, maybe check if the user is the owner
     pub(crate) fn selector(&self, user_id: Uuid, check_is_owner: bool) -> Select<files::Entity> {
-        self.build_selector(user_id, check_is_owner, false)
+        self.build_selector(user_id, check_is_owner, false, false)
     }
 
     /// Listing variant that leaves `files.encrypted_thumbnail` in the
@@ -123,7 +132,13 @@ where
         user_id: Uuid,
         check_is_owner: bool,
     ) -> Select<files::Entity> {
-        self.build_selector(user_id, check_is_owner, true)
+        self.build_selector(user_id, check_is_owner, true, false)
+    }
+
+    /// The only selector that sees trashed rows, and only the caller's own:
+    /// the trash belongs to the owner, whoever else held the file.
+    pub(crate) fn trash_selector(&self, user_id: Uuid, compact: bool) -> Select<files::Entity> {
+        self.build_selector(user_id, true, compact, true)
     }
 
     fn build_selector(
@@ -131,8 +146,13 @@ where
         user_id: Uuid,
         check_is_owner: bool,
         compact: bool,
+        include_trashed: bool,
     ) -> Select<files::Entity> {
         let mut selector = files::Entity::find().select_only();
+
+        if !include_trashed {
+            selector = selector.filter(files::Column::TrashedAt.is_null());
+        }
 
         match compact {
             true => entity::join::add_columns_with_prefix_nulling::<_, files::Entity>(

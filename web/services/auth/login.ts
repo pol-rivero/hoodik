@@ -164,8 +164,12 @@ export const store = defineStore('login', () => {
     // The file store holds the previous account's decrypted listing; drop it so
     // a login as a different account (no page reload) doesn't show their files.
     // Lazy import avoids the storage → services → auth import cycle at boot.
-    const { store: filesStore } = await import('../storage')
+    const [{ store: filesStore }, { store: trashStore }] = await Promise.all([
+      import('../storage'),
+      import('../storage/trash')
+    ])
     filesStore().reset()
+    trashStore().reset()
 
     // Signed chunk URLs stay valid for days, so they outlive the session that
     // obtained them, in both directions. Same lazy import, same reason.

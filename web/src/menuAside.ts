@@ -4,7 +4,8 @@ import {
   mdiHuman,
   mdiHumanMaleFemale,
   mdiCog,
-  mdiFileDocumentOutline
+  mdiFileDocumentOutline,
+  mdiTrashCanOutline
 } from '@mdi/js'
 import type { RouteLocation } from 'vue-router'
 import { i18n } from '@/i18n'
@@ -28,6 +29,11 @@ export default [
     to: { name: 'notes' },
     icon: mdiFileDocumentOutline,
     label: i18n.global.t('nav.menu.notes')
+  },
+  {
+    to: { name: 'trash' },
+    icon: mdiTrashCanOutline,
+    label: i18n.global.t('nav.menu.trash')
   },
   {
     to: { name: 'share' },

@@ -435,14 +435,14 @@ defineExpose({ exportPdf: handleExportPdf })
 
     <CardBoxModal
       :model-value="confirmingDelete"
-      :title="$t('preview.markdown.deleteTitle')"
+      :title="$t('files.delete.trashTitle')"
       button="danger"
-      :button-label="$t('files.delete.confirmLabel')"
+      :button-label="$t('files.delete.trashLabel')"
       has-cancel
       @cancel="confirmingDelete = false"
       @confirm="deleteNote"
     >
-      {{ $t('preview.markdown.deleteConfirm', { name: preview.name }) }}
+      {{ $t('preview.markdown.trashConfirm', { name: preview.name }) }}
     </CardBoxModal>
 
     <!-- Mounted on demand: the picker starts listing and decrypting folders

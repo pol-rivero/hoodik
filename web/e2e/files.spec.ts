@@ -490,11 +490,7 @@ test.describe('Delete', () => {
     await page.getByTestId('file-row-test-image.png').locator('[name="actions-dropdown"]').click()
     await page.locator('[name="delete"]').first().click()
 
-    // Confirm deletion if a modal appears
-    const confirmBtn = page.getByRole('button', { name: 'Delete' })
-    if (await confirmBtn.isVisible()) {
-      await confirmBtn.click()
-    }
+    await page.getByRole('button', { name: 'Move to trash' }).click()
 
     await expect(page.getByTestId('file-row-test-image.png')).not.toBeVisible()
   })
@@ -515,8 +511,7 @@ test.describe('Delete', () => {
       await page.getByTestId('file-row-Folder_B').locator('input[type="checkbox"]').check()
       await page.keyboard.press(key)
 
-      await page.getByTestId('delete-confirm-count').fill('2')
-      await page.getByRole('button', { name: 'Yes, delete' }).click()
+      await page.getByRole('dialog', { name: 'Move to trash' }).getByRole('button', { name: 'Move to trash' }).click()
 
       await expect(page.getByTestId('file-row-Folder_A')).not.toBeVisible()
       await expect(page.getByTestId('file-row-Folder_B')).not.toBeVisible()

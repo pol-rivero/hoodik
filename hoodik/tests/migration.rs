@@ -713,6 +713,57 @@ async fn test_migration_skips_staged_row_for_a_since_deleted_file() {
     assert_eq!(untouched, 0, "the surviving files migrated");
 }
 
+/// A file in the trash is still the user's, and comes back on restore: its key
+/// must be re-wrapped with every other one, or the restored file would be
+/// sealed under a key the account no longer holds.
+#[actix_web::test]
+async fn test_migration_rewraps_a_trashed_file_key() {
+    let context = context::Context::mock_sqlite().await;
+    let app = test::init_service(server::app(context.clone())).await;
+
+    let user = register_legacy_with(&app, &context.db, "migrate-trashed@example.com").await;
+    let file_id = create_file(&app, &user.jwt).await;
+    // Uploaded, so the delete trashes it instead of purging an abandoned upload.
+    entity::files::Entity::update(entity::files::ActiveModel {
+        id: ActiveValue::Unchanged(file_id),
+        chunks_stored: ActiveValue::Set(Some(1)),
+        finished_upload_at: ActiveValue::Set(Some(chrono::Utc::now().timestamp())),
+        ..Default::default()
+    })
+    .exec(&context.db)
+    .await
+    .unwrap();
+
+    let req = test::TestRequest::delete()
+        .uri(&format!("/api/storage/{file_id}"))
+        .cookie(user.jwt.clone())
+        .to_request();
+    assert_eq!(
+        test::call_service(&app, req).await.status(),
+        StatusCode::NO_CONTENT
+    );
+
+    let (resp, x_private, file_key, _links) = migrate(&app, &user).await;
+    assert_eq!(resp.status(), StatusCode::OK, "migration completes");
+
+    let req = test::TestRequest::post()
+        .uri("/api/storage/trash/restore")
+        .cookie(user.jwt.clone())
+        .set_json(json!({ "ids": [file_id] }))
+        .to_request();
+    let restored: Value = test::read_body_json(test::call_service(&app, req).await).await;
+    assert_eq!(restored["restored"][0]["id"], json!(file_id));
+
+    let row = entity::user_files::Entity::find()
+        .filter(entity::user_files::Column::FileId.eq(file_id))
+        .one(&context.db)
+        .await
+        .unwrap()
+        .unwrap();
+    let recovered = cryptfns::ecdh::unwrap(&row.encrypted_key, &x_private).unwrap();
+    assert_eq!(recovered, file_key, "the trashed file's key was re-wrapped");
+}
+
 /// Seed a prior audit row on `user_id`'s sender chain so the key-rotation event
 /// has a predecessor to chain off. Returns the row's `this_event_hash`.
 async fn seed_prior_event<C: entity::ConnectionTrait>(

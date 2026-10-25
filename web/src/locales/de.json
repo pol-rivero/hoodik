@@ -202,6 +202,10 @@
       "sharing": "Teilen",
       "sharingHint": "Wenn deaktiviert, verschwindet der Eintrag „Teilen“ aus allen Dateizeilen und alle {endpoint}-Endpunkte geben 503 zurück. Bestehende Freigaben bleiben beim Umschalten erhalten; nichts wird gelöscht.",
       "title": "Anwendungseinstellungen",
+      "trash": "Papierkorb",
+      "trashRetention": "Tage, die gelöschte Elemente aufbewahrt werden",
+      "trashRetentionHint": "Gelöschte Elemente bleiben so lange im Papierkorb ihres Besitzers, zählen weiter zum Kontingent und werden danach endgültig entfernt. Änderungen gelten für ab jetzt gelöschte Elemente.",
+      "trashRetentionInvalid": "Geben Sie eine ganze Zahl von Tagen zwischen 1 und 3650 ein.",
       "whitelist": "Whitelist",
       "whitelistHint": "Nur E-Mail-Adressen, die diesen Mustern entsprechen, können sich registrieren. Verwenden Sie Muster wie {exampleDomain} oder {exampleAny}. Leer lassen, um alle E-Mail-Adressen zu erlauben."
     },
@@ -486,10 +490,12 @@
     "pdfImagesDropped": "Einige Bilder konnten nicht in das PDF übernommen werden",
     "pending_chunks_not_set": "Upload-Status ist unvollständig",
     "pending_size_not_set": "Upload-Status ist unvollständig",
-    "quota_exceeded": "Speicherkontingent überschritten",
+    "purgeFailed": "Löschen fehlgeschlagen: Das Element ist noch im Papierkorb",
+    "quota_exceeded": "Speicherkontingent überschritten. Elemente im Papierkorb zählen weiterhin dazu.",
     "registration_not_allowed": "Registrierung ist für diese E-Mail-Adresse nicht erlaubt",
     "requestFailed": "Anfrage fehlgeschlagen",
     "required": "Dieses Feld ist erforderlich",
+    "restoreFailed": "Wiederherstellen fehlgeschlagen: Das Element ist noch im Papierkorb",
     "rewrap_batch_too_large": "Schlüsselmigrations-Stapel ist zu groß",
     "rewrapped_key_not_owned": "Ein fremder Schlüssel kann nicht migriert werden",
     "rewrapped_link_key_not_owned": "Ein fremder Link-Schlüssel kann nicht migriert werden",
@@ -549,14 +555,13 @@
       "title": "Neue Datei erstellen"
     },
     "delete": {
-      "confirmDirectory": "Möchten Sie den Ordner „{name}“ endgültig löschen?",
-      "confirmFile": "Möchten Sie „{name}“ endgültig löschen?",
-      "confirmLabel": "Ja, löschen",
-      "confirmMany": "Möchten Sie {count} Elemente löschen?",
-      "confirmManyFolders": "{count} davon ist ein Ordner — alles darin verschwindet mit. | {count} davon sind Ordner — alles darin verschwindet mit.",
-      "selectedTitle": "Auswahl löschen",
-      "typeCount": "{count} eingeben zum Bestätigen",
-      "typeName": "{name} eingeben zum Bestätigen"
+      "movedTitle": "In den Papierkorb verschoben",
+      "sharedNote": "Mit Ihnen geteilte Elemente werden nur aus Ihrer Ansicht entfernt und landen nicht in Ihrem Papierkorb.",
+      "trashDirectory": "Den Ordner „{name}“ mit allem Inhalt in den Papierkorb verschieben? Sie können ihn aus dem Papierkorb wiederherstellen.",
+      "trashFile": "„{name}“ in den Papierkorb verschieben? Sie können es aus dem Papierkorb wiederherstellen.",
+      "trashLabel": "In den Papierkorb verschieben",
+      "trashMany": "{count} Element in den Papierkorb verschieben? Sie können es aus dem Papierkorb wiederherstellen. | {count} Elemente in den Papierkorb verschieben? Sie können sie aus dem Papierkorb wiederherstellen.",
+      "trashTitle": "In den Papierkorb verschieben"
     },
     "details": {
       "uploaded": "Hochgeladen"
@@ -756,6 +761,7 @@
       "notes": "Notizen",
       "share": "Freigabe",
       "theme": "Darstellung",
+      "trash": "Papierkorb",
       "users": "Benutzer"
     },
     "title": {
@@ -780,6 +786,7 @@
       "registerResend": "Konto erstellen – Aktivierungs-E-Mail erneut senden",
       "registerTwoFactor": "Konto erstellen – Zwei-Faktor-Authentifizierung",
       "setupLockScreen": "Sperrbildschirm einrichten",
+      "trash": "Papierkorb",
       "verifyEmail": "Konto erstellen – E-Mail verifizieren"
     },
     "upload": {
@@ -851,12 +858,11 @@
       "conflictTitle": "Ein anderer Speichervorgang läuft",
       "convertAction": "In bearbeitbare Notiz umwandeln",
       "converting": "Wird umgewandelt...",
-      "deleteConfirm": "Möchten Sie „{name}“ löschen?",
-      "deleteTitle": "Notiz löschen",
       "moveConfirmLabel": "Hierher verschieben",
       "moveDestination": "„{name}“ nach {folder} verschieben",
       "moveTitle": "In Ordner verschieben",
-      "readOnly": "Diese Markdown-Datei ist schreibgeschützt."
+      "readOnly": "Diese Markdown-Datei ist schreibgeschützt.",
+      "trashConfirm": "Die Notiz „{name}“ in den Papierkorb verschieben?"
     },
     "nextImage": "Nächstes Bild",
     "noPreview": "Keine Vorschau verfügbar",
@@ -1183,6 +1189,38 @@
   },
   "time": {
     "justNow": "gerade eben"
+  },
+  "trash": {
+    "actions": {
+      "deleteForever": "Endgültig löschen",
+      "empty": "Papierkorb leeren",
+      "restore": "Wiederherstellen"
+    },
+    "columns": {
+      "deleted": "Gelöscht",
+      "expires": "Endgültige Löschung"
+    },
+    "confirm": {
+      "deleteForever": "„{name}“ endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteForeverMany": "{count} Element endgültig löschen? Dies kann nicht rückgängig gemacht werden. | {count} Elemente endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "deleteForeverTitle": "Endgültig löschen",
+      "empty": "{count} Element im Papierkorb endgültig löschen? Dies kann nicht rückgängig gemacht werden. | Alle {count} Elemente im Papierkorb endgültig löschen? Dies kann nicht rückgängig gemacht werden.",
+      "emptyTitle": "Papierkorb leeren"
+    },
+    "emptyState": "Der Papierkorb ist leer",
+    "expiresIn": "in {count} Tag | in {count} Tagen",
+    "expiresLine": "Endgültige Löschung {when}",
+    "expiresToday": "heute",
+    "notify": {
+      "conflict": "Dort existiert bereits ein Element mit diesem Namen. Benennen Sie es um oder verschieben Sie es und versuchen Sie es erneut.",
+      "conflictTitle": "Einige Elemente wurden nicht wiederhergestellt",
+      "missing": "{count} Element konnte nicht mehr wiederhergestellt werden. Es wurde bereits wiederhergestellt oder endgültig gelöscht. | {count} Elemente konnten nicht mehr wiederhergestellt werden. Sie wurden bereits wiederhergestellt oder endgültig gelöscht.",
+      "relocated": "„{name}“ wurde in Meine Dateien wiederhergestellt, da der ursprüngliche Ordner nicht mehr verfügbar ist.",
+      "relocatedMany": "{count} Element wurde in Meine Dateien wiederhergestellt, da der ursprüngliche Ordner nicht mehr verfügbar ist. | {count} Elemente wurden in Meine Dateien wiederhergestellt, da die ursprünglichen Ordner nicht mehr verfügbar sind.",
+      "restored": "{count} Element wiederhergestellt | {count} Elemente wiederhergestellt",
+      "restoredTitle": "Wiederhergestellt"
+    },
+    "title": "Papierkorb"
   },
   "ui": {
     "aside": {

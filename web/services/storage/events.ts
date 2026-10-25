@@ -1,11 +1,11 @@
 /**
  * Global event bus for file tree mutations.
  *
- * Components that modify files (create, delete, rename, move) emit events here.
+ * Components that modify files (create, delete, rename, move, restore) emit events here.
  * The sidebar file tree listens and refreshes the affected folder(s).
  */
 
-type FileTreeEventType = 'created' | 'deleted' | 'renamed' | 'moved'
+type FileTreeEventType = 'created' | 'deleted' | 'renamed' | 'moved' | 'restored'
 
 interface FileTreeEvent {
   type: FileTreeEventType

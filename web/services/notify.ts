@@ -67,7 +67,7 @@ export function errorNotification(error: string | Error | ErrorResponse<any> | u
 export function notification(
   title: string,
   text?: string,
-  type: 'success' | 'error' | 'info' = 'info'
+  type: 'success' | 'error' | 'info' | 'warn' = 'info'
 ) {
   notify({
     type,

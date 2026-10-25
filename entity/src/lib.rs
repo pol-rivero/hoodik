@@ -23,6 +23,7 @@ pub mod users;
 
 pub mod join;
 pub mod sort;
+pub mod trash;
 
 pub mod numeric;
 

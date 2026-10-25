@@ -513,14 +513,45 @@ async fn test_owner_delete_folder_cascades() {
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::NO_CONTENT);
 
-    // Every user_files row under the folder is gone — bob's and
+    // The delete moved the folder to the trash: every row survives, and the
+    // files carry the trash stamp.
+    let rows = user_files::Entity::find()
+        .filter(user_files::Column::FileId.is_in(vec![folder.id, child.id]))
+        .all(&context.db)
+        .await
+        .unwrap();
+    assert_eq!(
+        rows.len(),
+        4,
+        "alice's and bob's rows on both files survive"
+    );
+    let trashed = entity::files::Entity::find()
+        .filter(entity::files::Column::Id.is_in(vec![folder.id, child.id]))
+        .filter(entity::files::Column::TrashedAt.is_not_null())
+        .all(&context.db)
+        .await
+        .unwrap();
+    assert_eq!(trashed.len(), 2);
+
+    let req = test::TestRequest::post()
+        .uri("/api/storage/trash/purge")
+        .cookie(alice.jwt.clone())
+        .set_json(serde_json::json!({ "ids": [folder.id] }))
+        .to_request();
+    assert_eq!(
+        test::call_service(&app, req).await.status(),
+        StatusCode::ACCEPTED
+    );
+    storage::trash::purge_due(&context).await;
+
+    // Purged: every user_files row under the folder is gone — bob's and
     // alice's both — because the files themselves cascaded.
     let any = user_files::Entity::find()
         .filter(user_files::Column::FileId.is_in(vec![folder.id, child.id]))
         .all(&context.db)
         .await
         .unwrap();
-    assert!(any.is_empty(), "owner cascade drops every user_files row");
+    assert!(any.is_empty(), "owner purge drops every user_files row");
     let _ = context;
 }
 

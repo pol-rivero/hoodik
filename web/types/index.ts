@@ -2,6 +2,7 @@ import type { Query } from '../services/api'
 import type { store as downloadStore } from '../services/storage/download'
 import type { store as uploadStore } from '../services/storage/upload'
 import type { store as filesStore } from '../services/storage'
+import type { store as trashStore } from '../services/storage/trash'
 import type { store as queueStore } from '../services/queue'
 import type { store as cryptoStore } from '../services/crypto'
 import type { store as linksStore } from '../services/links'
@@ -28,6 +29,7 @@ export * from './worker'
 export type UploadStore = ReturnType<typeof uploadStore>
 export type DownloadStore = ReturnType<typeof downloadStore>
 export type FilesStore = ReturnType<typeof filesStore>
+export type TrashStore = ReturnType<typeof trashStore>
 export type QueueStore = ReturnType<typeof queueStore>
 export type LoginStore = ReturnType<typeof loginStore>
 export type CryptoStore = ReturnType<typeof cryptoStore>

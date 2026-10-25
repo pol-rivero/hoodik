@@ -137,6 +137,9 @@ async fn main() {
         members_list_signature: ActiveValue::NotSet,
         members_list_signed_at: ActiveValue::NotSet,
         members_list_signed_by_user_id: ActiveValue::NotSet,
+        trashed_at: ActiveValue::NotSet,
+        trash_root_id: ActiveValue::NotSet,
+        purge_at: ActiveValue::NotSet,
     })
     .exec_without_returning(&db)
     .await

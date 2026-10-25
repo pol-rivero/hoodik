@@ -1,10 +1,12 @@
 mod blacklist;
 mod sharing;
+mod trash;
 mod users;
 mod whitelist;
 
 pub use blacklist::Blacklist;
 pub use sharing::Sharing;
+pub use trash::Trash;
 pub use users::Users;
 pub use whitelist::Whitelist;
 
@@ -16,6 +18,8 @@ pub struct Data {
     pub users: Users,
     #[serde(default)]
     pub sharing: Sharing,
+    #[serde(default)]
+    pub trash: Trash,
 }
 
 impl Data {

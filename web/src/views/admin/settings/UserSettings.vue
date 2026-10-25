@@ -7,7 +7,14 @@ import ListInput from '@/components/ui/ListInput.vue'
 import { computed } from 'vue'
 import QuotaInput from '@/components/ui/QuotaInput.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { mdiContentSave, mdiAccountPlus, mdiEmailSearch, mdiDatabase, mdiShareVariantOutline } from '@mdi/js'
+import {
+  mdiContentSave,
+  mdiAccountPlus,
+  mdiEmailSearch,
+  mdiDatabase,
+  mdiShareVariantOutline,
+  mdiTrashCanOutline
+} from '@mdi/js'
 
 const props = defineProps<{
   modelValue?: Data
@@ -22,6 +29,17 @@ const data = computed({
   get() { return props.modelValue },
   set(value) { emits('update:modelValue', value) }
 })
+
+/**
+ * Checked here because the server can't answer a cleared or fractional
+ * field with a field error: either fails JSON decoding with a bare 400.
+ */
+const retentionValid = computed(() => {
+  const days = data.value?.trash?.retention_days as unknown
+  return typeof days === 'number' && Number.isInteger(days) && days >= 1 && days <= 3650
+})
+
+const canSave = computed(() => !data.value?.trash || retentionValid.value)
 </script>
 <template>
   <CardBox :class="props.class" v-if="data">
@@ -140,6 +158,42 @@ const data = computed({
       />
     </div>
 
+    <div v-if="data.trash" class="-mx-4 px-6 py-5 border-b border-paper-200 dark:border-brownish-700/50">
+      <div class="flex items-center gap-2 mb-3">
+        <BaseIcon :path="mdiTrashCanOutline" :size="14" class="text-brownish-400 dark:text-brownish-50" />
+        <p class="text-xs font-semibold text-brownish-400 dark:text-brownish-50">{{ $t('admin.settings.trash') }}</p>
+      </div>
+
+      <div class="p-3 rounded-xl bg-paper-200 dark:bg-brownish-700/20 border border-paper-200/50 dark:border-brownish-700/30">
+        <label class="block text-xs font-medium mb-1 text-brownish-300 dark:text-brownish-50" for="trash_retention_days">{{ $t('admin.settings.trashRetention') }}</label>
+        <input
+          id="trash_retention_days"
+          v-model.number="data.trash.retention_days"
+          type="number"
+          min="1"
+          max="3650"
+          step="1"
+          inputmode="numeric"
+          :disabled="loading"
+          data-testid="admin-trash-retention"
+          :aria-invalid="!retentionValid"
+          aria-describedby="trash_retention_days_error"
+          class="w-32 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+        />
+        <p
+          v-if="!retentionValid"
+          id="trash_retention_days_error"
+          class="text-xs text-redish-500 dark:text-redish-100 mt-1"
+          data-testid="admin-trash-retention-error"
+        >
+          {{ $t('admin.settings.trashRetentionInvalid') }}
+        </p>
+        <p class="text-xs text-brownish-400 dark:text-brownish-50 leading-relaxed mt-1">
+          {{ $t('admin.settings.trashRetentionHint') }}
+        </p>
+      </div>
+    </div>
+
     <div class="-mx-4 -mb-4 px-6 py-4 rounded-b-2xl">
       <div v-if="error" class="rounded-lg bg-redish-500/10 border border-redish-500/30 px-4 py-3 mb-3">
         <p class="text-sm text-redish-400 dark:text-redish-100">{{ error }}</p>
@@ -147,7 +201,7 @@ const data = computed({
 
       <BaseButton
         color="info"
-        :disabled="loading"
+        :disabled="loading || !canSave"
         :icon="mdiContentSave"
         :label="loading ? $t('admin.settings.saving') : $t('admin.settings.saveSettings')"
         @click="emits('save')"

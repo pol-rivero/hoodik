@@ -1,11 +1,15 @@
-use crate::{mock::create_file, repository::Repository};
+use chrono::Utc;
 use context::Context;
+use entity::{files, ColumnTrait, EntityTrait, QueryFilter};
+
+use crate::{mock::create_file, repository::Repository};
 
 #[actix_web::test]
-async fn create_recursive_mess_to_test_delete_many() {
+async fn trashing_a_recursive_mess_stamps_every_row_once() {
     let context = Context::mock_sqlite().await;
     let repository = Repository::new(&context.db);
     let user = entity::mock::create_user(&context.db, "first@test.com", None).await;
+    let now = Utc::now().timestamp();
 
     let mut manual = vec![];
 
@@ -15,56 +19,18 @@ async fn create_recursive_mess_to_test_delete_many() {
     let dir_id = dir.id;
     manual.push(dir);
 
-    let file = create_file(
-        &context,
-        &user,
-        "root.json1",
-        None,
-        Some("application/json"),
-    )
-    .await
-    .unwrap();
-    manual.push(file);
+    for name in ["root.json1", "root.json2", "root.json3", "root.json4"] {
+        let file = create_file(&context, &user, name, None, Some("application/json"))
+            .await
+            .unwrap();
+        manual.push(file);
+    }
 
-    let file = create_file(
-        &context,
-        &user,
-        "root.json2",
-        None,
-        Some("application/json"),
-    )
-    .await
-    .unwrap();
-    let _file2_id = file.id;
-    manual.push(file);
-
-    let file = create_file(
-        &context,
-        &user,
-        "root.json3",
-        None,
-        Some("application/json"),
-    )
-    .await
-    .unwrap();
-    manual.push(file);
-
-    let file = create_file(
-        &context,
-        &user,
-        "root.json4",
-        None,
-        Some("application/json"),
-    )
-    .await
-    .unwrap();
-    manual.push(file);
-
-    let dir = create_file(&context, &user, "root.dir.dir2", Some(dir_id), Some("dir"))
+    let dir2 = create_file(&context, &user, "root.dir.dir2", Some(dir_id), Some("dir"))
         .await
         .unwrap();
-    let dir2_id = dir.id;
-    manual.push(dir);
+    let dir2_id = dir2.id;
+    manual.push(dir2);
 
     let dir3 = create_file(
         &context,
@@ -79,17 +45,21 @@ async fn create_recursive_mess_to_test_delete_many() {
 
     let ids = manual.iter().map(|f| f.id).collect::<Vec<_>>();
 
-    let delete_files = repository
-        .manage(user.id)
-        .delete_many(ids.clone())
+    let trash = repository.trash(user.id);
+    let roots = trash.roots(&ids).await.unwrap();
+    assert_eq!(roots.len(), 5, "the folder and the four root files");
+
+    let mut stamped = 0;
+    for root in roots {
+        stamped += trash.trash(root, now, now + 1).await.unwrap();
+    }
+    assert_eq!(stamped as usize, manual.len());
+
+    let still_active = files::Entity::find()
+        .filter(files::Column::Id.is_in(ids))
+        .filter(files::Column::TrashedAt.is_null())
+        .all(&context.db)
         .await
         .unwrap();
-
-    for file in manual.iter() {
-        assert!(file.is_owner);
-    }
-
-    assert_ne!(delete_files.len(), 0);
-
-    assert_eq!(manual.len(), delete_files.len());
+    assert!(still_active.is_empty());
 }

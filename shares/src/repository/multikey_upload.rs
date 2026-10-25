@@ -292,6 +292,7 @@ impl Repository<'_> {
         let file = files::Entity::find_by_id(target_file_id)
             .one(&self.context.db)
             .await?
+            .filter(|file| file.trashed_at.is_none())
             .ok_or_else(|| Error::NotFound("file_not_found".to_string()))?;
         let parent_id = file
             .file_id
@@ -740,6 +741,9 @@ fn build_new_file(
         members_list_signature: ActiveValue::Set(None),
         members_list_signed_at: ActiveValue::Set(None),
         members_list_signed_by_user_id: ActiveValue::Set(None),
+        trashed_at: ActiveValue::Set(None),
+        trash_root_id: ActiveValue::Set(None),
+        purge_at: ActiveValue::Set(None),
     }
 }
 

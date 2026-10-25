@@ -35,12 +35,24 @@ pub struct Capabilities {
     /// exist yet.
     #[serde(default = "tar_transfer_default")]
     pub tar_transfer: bool,
+
+    /// Deleting moves items to a per-user trash instead of removing them.
+    /// Absent means a server from before the trash, where deletes are final.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trash: Option<TrashCapabilities>,
 }
 
 /// Absence means a server from before the switch existed, and every one of
 /// those bundles.
 fn tar_transfer_default() -> bool {
     true
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct TrashCapabilities {
+    pub enabled: bool,
+    /// How many days an item deleted now stays restorable.
+    pub retention_days: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -55,6 +67,7 @@ impl Capabilities {
         default_cipher: String,
         direct_transfer: bool,
         tar_transfer: bool,
+        trash_retention_days: i64,
     ) -> Self {
         Self {
             sharing: SharingCapabilities {
@@ -72,6 +85,10 @@ impl Capabilities {
             default_cipher,
             direct_transfer,
             tar_transfer,
+            trash: Some(TrashCapabilities {
+                enabled: true,
+                retention_days: trash_retention_days,
+            }),
         }
     }
 }

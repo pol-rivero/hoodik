@@ -89,6 +89,17 @@ pub struct AppFile {
     /// those above body matches.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_name_hits: Option<i64>,
+    /// When the file went to the trash, or `None` while it is active.
+    #[serde(default)]
+    pub trashed_at: Option<i64>,
+    /// The trashed item this row went to the trash with; equal to `id` on
+    /// the item the user trashed.
+    #[serde(default)]
+    pub trash_root_id: Option<Uuid>,
+    /// When the trashed item is deleted for good; `0` while it is being
+    /// purged.
+    #[serde(default)]
+    pub purge_at: Option<i64>,
 }
 
 impl IntoFilename for AppFile {
@@ -116,6 +127,12 @@ impl AppFile {
 
     pub fn is_dir(&self) -> bool {
         &self.mime == "dir"
+    }
+
+    /// Whether the caller this row was loaded for may write into it: their
+    /// own file, or one shared with them as co-owner or editor.
+    pub fn is_writable(&self) -> bool {
+        self.is_owner || matches!(self.share_role.as_deref(), Some("co-owner" | "editor"))
     }
 
     pub fn is_new(mut self, is_new: bool) -> Self {
@@ -216,6 +233,9 @@ impl FromQueryResult for AppFile {
             search_hits: res.try_get::<i64>("", "search_hits").ok(),
             search_weight: res.try_get::<i64>("", "search_weight").ok(),
             search_name_hits: res.try_get::<i64>("", "search_name_hits").ok(),
+            trashed_at: file.trashed_at,
+            trash_root_id: file.trash_root_id,
+            purge_at: file.purge_at,
         })
     }
 }

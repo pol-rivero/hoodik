@@ -5,6 +5,26 @@ export interface DeleteManyFiles {
   ids: string[]
 }
 
+export interface TrashListResponse {
+  items: EncryptedAppFile[]
+}
+
+export interface RestoredItem {
+  id: string
+  /** Parent the item now lives in; null is the caller's root. */
+  file_id: string | null
+  /** The original parent was unusable, so the item went to the root. */
+  relocated: boolean
+}
+
+export interface RestoreTrashResponse {
+  restored: RestoredItem[]
+  /** Left in trash: an item with the same name already exists at the target. */
+  conflicts: string[]
+  /** Not a restorable trash root of the caller (already restored or purged). */
+  missing: string[]
+}
+
 export interface MoveManyFiles {
   ids: string[]
   file_id?: string | null | undefined
@@ -146,6 +166,18 @@ export interface EncryptedAppFile extends AppFileEncryptedPart {
    * lazily per file.
    */
   has_thumbnail?: boolean
+
+  /** Unix seconds when the row went to trash; null while active. */
+  trashed_at?: number | null
+
+  /** Id of the item the user trashed; equals `id` on a trash root. */
+  trash_root_id?: string | null
+
+  /**
+   * Unix seconds when the trashed group is deleted for good. `0` means a
+   * purge is already under way and the item can no longer be restored.
+   */
+  purge_at?: number | null
 }
 
 /**

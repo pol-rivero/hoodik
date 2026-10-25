@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CardBoxModal from '@/components/ui/CardBoxModal.vue'
 import type { FilesStore, KeyPair } from 'types'
 import { notification, humanizeError } from '!/notify'
+import { isUnfinishedUpload } from '!/storage/trash'
 
 const props = defineProps<{
   modelValue: boolean
@@ -19,27 +20,48 @@ const emits = defineEmits<{
 
 const selected = computed(() => props.Storage.selected ?? [])
 const count = computed(() => selected.value.length)
-const folders = computed(() => selected.value.filter((f) => f.mime === 'dir').length)
+const single = computed(() => (count.value === 1 ? selected.value[0] : undefined))
+
+const shared = computed(() => selected.value.filter((file) => file.is_owner === false))
+const unfinished = computed(() =>
+  selected.value.filter((file) => file.is_owner !== false && isUnfinishedUpload(file))
+)
+const trashable = computed(() => count.value - shared.value.length - unfinished.value.length)
 
 /**
- * The danger in a bulk delete is not knowing what is in the selection, so the
- * gate is the count itself — typing it means the number was read. A single
- * file keeps the plain confirm; it is one named row.
+ * The trash copy, with its promise of a restore, is only used when something
+ * in the selection really goes to trash. A selection made only of shares the
+ * caller doesn't own, or only of unfinished uploads, gets the wording of what
+ * the server does to those instead.
  */
-const typed = ref('')
+const mode = computed<'trash' | 'leave' | 'purge'>(() => {
+  if (trashable.value > 0 || !count.value) return 'trash'
+  if (shared.value.length === count.value) return 'leave'
+  // Only unfinished uploads, possibly mixed with shares: nothing is restorable.
+  return 'purge'
+})
 
-watch(
-  () => props.modelValue,
-  () => (typed.value = '')
-)
+const title = computed(() => {
+  if (mode.value === 'leave') return t('shares.revokeModal.selfTitle')
+  if (mode.value === 'purge') return t('trash.confirm.deleteForeverTitle')
+  return t('files.delete.trashTitle')
+})
 
-const needsTyping = computed(() => count.value > 1)
-const confirmDisabled = computed(() => needsTyping.value && typed.value.trim() !== String(count.value))
+const buttonLabel = computed(() => {
+  if (mode.value === 'leave') return t('shares.revokeModal.leave')
+  if (mode.value === 'purge') return t('trash.actions.deleteForever')
+  return t('files.delete.trashLabel')
+})
 
 const confirmRemoveAll = async () => {
-  if (confirmDisabled.value) return
+  // Read before the call: a successful removal empties the selection.
+  const done = mode.value
+  const movedAny = trashable.value > 0
+
   try {
     await props.Storage.removeAll(props.kp, props.Storage.selected)
+    if (movedAny) notification(t('files.delete.movedTitle'), undefined, 'success')
+    else if (done === 'leave') notification(t('nav.leave.removedTitle'), undefined, 'success')
   } catch (err) {
     notification(t('errors.deleteFailed'), humanizeError(err), 'error')
   }
@@ -49,41 +71,50 @@ const confirmRemoveAll = async () => {
 
 <template>
   <CardBoxModal
-    :title="$t('files.delete.selectedTitle')"
+    :title="title"
     button="danger"
     :model-value="props.modelValue"
-    :button-label="$t('files.delete.confirmLabel')"
+    :button-label="buttonLabel"
     :has-cancel="true"
-    :confirm-disabled="confirmDisabled"
     @cancel="emits('update:modelValue', false)"
     :action="confirmRemoveAll"
   >
-    <template v-if="needsTyping">
-      <p>{{ $t('files.delete.confirmMany', { count }) }}</p>
-      <p v-if="folders" class="mt-1 text-sm text-brownish-400 dark:text-brownish-50">
-        {{ $t('files.delete.confirmManyFolders', { count: folders }) }}
-      </p>
+    <i18n-t
+      v-if="mode === 'leave'"
+      tag="p"
+      keypath="shares.revokeModal.selfBody"
+      scope="global"
+      data-testid="delete-leave-body"
+    >
+      <template #item>
+        <strong>{{ single ? single.name : $t('files.moveShare.itemCount', count) }}</strong>
+      </template>
+    </i18n-t>
 
-      <label class="block mt-4 text-sm">
-        <span class="block mb-1.5">{{ $t('files.delete.typeCount', { count }) }}</span>
-        <input
-          v-model="typed"
-          type="text"
-          inputmode="numeric"
-          autocomplete="off"
-          data-testid="delete-confirm-count"
-          class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-redish-400/60 dark:focus:ring-redish-500/50"
-        />
-      </label>
-    </template>
+    <p v-else-if="mode === 'purge'" data-testid="delete-purge-body">
+      {{
+        single
+          ? $t('trash.confirm.deleteForever', { name: single.name })
+          : $t('trash.confirm.deleteForeverMany', { count }, count)
+      }}
+    </p>
 
-    <template v-else v-for="file in selected" :key="file.id">
-      <p>
+    <template v-else>
+      <p v-if="single">
         {{
-          file?.mime === 'dir'
-            ? $t('files.delete.confirmDirectory', { name: file?.name })
-            : $t('files.delete.confirmFile', { name: file?.name })
+          single.mime === 'dir'
+            ? $t('files.delete.trashDirectory', { name: single.name })
+            : $t('files.delete.trashFile', { name: single.name })
         }}
+      </p>
+      <p v-else>{{ $t('files.delete.trashMany', { count }, count) }}</p>
+
+      <p
+        v-if="shared.length"
+        class="mt-2 text-sm text-brownish-400 dark:text-brownish-50"
+        data-testid="delete-shared-note"
+      >
+        {{ $t('files.delete.sharedNote') }}
       </p>
     </template>
   </CardBoxModal>

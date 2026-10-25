@@ -1,6 +1,7 @@
 export interface Data {
   users: Users
   sharing: Sharing
+  trash: Trash
   /**
    * Read-only deployment flag surfaced on the settings GET (not persisted).
    * When true the admin "send test email" card is hidden and its endpoint 403s.
@@ -31,4 +32,12 @@ export interface Sharing {
 
 export interface WhitelistOrBlacklist {
   rules: string[]
+}
+
+export interface Trash {
+  /**
+   * Days a deleted item stays restorable (1..=3650). Stamped on each item when
+   * it is deleted, so a change only affects later deletes.
+   */
+  retention_days: number
 }

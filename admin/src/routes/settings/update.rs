@@ -22,7 +22,14 @@ pub(crate) async fn update(
 
     let cipher = data.sharing.default_cipher();
     if cipher.is_empty() || Cipher::from_str(cipher).is_err() {
-        return Err(Error::as_validation("sharing.default_cipher", "unknown_cipher"));
+        return Err(Error::as_validation(
+            "sharing.default_cipher",
+            "unknown_cipher",
+        ));
+    }
+
+    if let Some(rule) = data.trash.retention_days_violation() {
+        return Err(Error::as_validation("trash.retention_days", rule));
     }
 
     context

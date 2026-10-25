@@ -202,6 +202,10 @@
       "sharing": "Dijeljenje",
       "sharingHint": "Kada je isključeno, opcija Podijeli nestaje iz svakog retka datoteke, a svi {endpoint} endpointi vraćaju 503. Postojeći zapisi dijeljenja ostaju sačuvani; ništa se ne briše.",
       "title": "Postavke aplikacije",
+      "trash": "Smeće",
+      "trashRetention": "Broj dana čuvanja obrisanih stavki",
+      "trashRetentionHint": "Obrisane stavke ostaju u smeću vlasnika ovoliko dana, i dalje se računaju u kvotu, a zatim se trajno uklanjaju. Promjene vrijede za stavke obrisane od sada.",
+      "trashRetentionInvalid": "Upiši cijeli broj dana od 1 do 3650.",
       "whitelist": "Whitelist",
       "whitelistHint": "Registrirati se mogu samo emailovi koji odgovaraju ovim uzorcima. Koristi glob uzorke poput {exampleDomain} ili {exampleAny}. Ostavi prazno za dopuštanje svih emailova."
     },
@@ -486,10 +490,12 @@
     "pdfImagesDropped": "Neke slike nije bilo moguće uključiti u PDF",
     "pending_chunks_not_set": "Stanje uploada nije potpuno",
     "pending_size_not_set": "Stanje uploada nije potpuno",
-    "quota_exceeded": "Kvota pohrane je premašena",
+    "purgeFailed": "Brisanje nije uspjelo, stavka je još u smeću",
+    "quota_exceeded": "Kvota pohrane je premašena. Stavke u smeću se i dalje računaju.",
     "registration_not_allowed": "Registracija nije dopuštena za ovaj email",
     "requestFailed": "Zahtjev nije uspio",
     "required": "Ovo polje je obavezno",
+    "restoreFailed": "Vraćanje nije uspjelo, stavka je još u smeću",
     "rewrap_batch_too_large": "Batch za migraciju ključeva je prevelik",
     "rewrapped_key_not_owned": "Ne možeš migrirati ključ koji nije tvoj",
     "rewrapped_link_key_not_owned": "Ne možeš migrirati ključ linka koji nije tvoj",
@@ -549,14 +555,13 @@
       "title": "Kreiraj novu datoteku"
     },
     "delete": {
-      "confirmDirectory": "Sigurno želiš zauvijek obrisati folder '{name}'?",
-      "confirmFile": "Sigurno želiš zauvijek obrisati '{name}'?",
-      "confirmLabel": "Da, obriši",
-      "confirmMany": "Sigurno želiš obrisati odabrane stavke ({count})?",
-      "confirmManyFolders": "{count} od njih je mapa — nestaje i sve unutra. | {count} su mape — nestaje i sve unutra.",
-      "selectedTitle": "Obriši odabrano",
-      "typeCount": "Upiši {count} za potvrdu",
-      "typeName": "Upiši {name} za potvrdu"
+      "movedTitle": "Premješteno u smeće",
+      "sharedNote": "Stavke podijeljene s tobom samo se uklanjaju iz tvog prikaza i ne idu u tvoje smeće.",
+      "trashDirectory": "Premjestiti folder '{name}' i sve u njemu u smeće? Možeš ga vratiti iz smeća.",
+      "trashFile": "Premjestiti '{name}' u smeće? Možeš je vratiti iz smeća.",
+      "trashLabel": "Premjesti u smeće",
+      "trashMany": "Premjestiti {count} stavku u smeće? Možeš je vratiti iz smeća. | Premjestiti {count} stavke u smeće? Možeš ih vratiti iz smeća. | Premjestiti {count} stavki u smeće? Možeš ih vratiti iz smeća.",
+      "trashTitle": "Premjesti u smeće"
     },
     "details": {
       "uploaded": "Uploadano"
@@ -756,6 +761,7 @@
       "notes": "Bilješke",
       "share": "Dijeljenje",
       "theme": "Tema",
+      "trash": "Smeće",
       "users": "Korisnici"
     },
     "title": {
@@ -780,6 +786,7 @@
       "registerResend": "Kreiranje računa - Ponovno slanje aktivacijskog emaila",
       "registerTwoFactor": "Kreiranje računa - Dvofaktorska autentifikacija",
       "setupLockScreen": "Postavljanje zaključanog ekrana",
+      "trash": "Smeće",
       "verifyEmail": "Kreiranje računa - Potvrda emaila"
     },
     "upload": {
@@ -851,12 +858,11 @@
       "conflictTitle": "Drugo spremanje je u tijeku",
       "convertAction": "Pretvori u bilješku za uređivanje",
       "converting": "Pretvaranje...",
-      "deleteConfirm": "Sigurno želiš obrisati '{name}'?",
-      "deleteTitle": "Obriši bilješku",
       "moveConfirmLabel": "Premjesti ovdje",
       "moveDestination": "Premjesti '{name}' u {folder}",
       "moveTitle": "Premjesti u folder",
-      "readOnly": "Ova markdown datoteka je samo za čitanje."
+      "readOnly": "Ova markdown datoteka je samo za čitanje.",
+      "trashConfirm": "Premjestiti bilješku '{name}' u smeće?"
     },
     "nextImage": "Sljedeća slika",
     "noPreview": "Pregled nije dostupan",
@@ -1183,6 +1189,38 @@
   },
   "time": {
     "justNow": "upravo sada"
+  },
+  "trash": {
+    "actions": {
+      "deleteForever": "Trajno obriši",
+      "empty": "Isprazni smeće",
+      "restore": "Vrati"
+    },
+    "columns": {
+      "deleted": "Obrisano",
+      "expires": "Trajno brisanje"
+    },
+    "confirm": {
+      "deleteForever": "Trajno obrisati '{name}'? Ovo se ne može poništiti.",
+      "deleteForeverMany": "Trajno obrisati {count} stavku? Ovo se ne može poništiti. | Trajno obrisati {count} stavke? Ovo se ne može poništiti. | Trajno obrisati {count} stavki? Ovo se ne može poništiti.",
+      "deleteForeverTitle": "Trajno obriši",
+      "empty": "Trajno obrisati {count} stavku iz smeća? Ovo se ne može poništiti. | Trajno obrisati {count} stavke iz smeća? Ovo se ne može poništiti. | Trajno obrisati svih {count} stavki iz smeća? Ovo se ne može poništiti.",
+      "emptyTitle": "Isprazni smeće"
+    },
+    "emptyState": "Smeće je prazno",
+    "expiresIn": "za {count} dan | za {count} dana | za {count} dana",
+    "expiresLine": "Trajno brisanje {when}",
+    "expiresToday": "danas",
+    "notify": {
+      "conflict": "Tamo već postoji stavka istog naziva. Preimenuj je ili premjesti pa pokušaj ponovno.",
+      "conflictTitle": "Neke stavke nisu vraćene",
+      "missing": "{count} stavku više nije moguće vratiti. Već je vraćena ili trajno obrisana. | {count} stavke više nije moguće vratiti. Već su vraćene ili trajno obrisane. | {count} stavki više nije moguće vratiti. Već su vraćene ili trajno obrisane.",
+      "relocated": "'{name}' je vraćen u Moje datoteke jer izvorni folder više nije dostupan.",
+      "relocatedMany": "{count} stavka vraćena je u Moje datoteke jer izvorni folder više nije dostupan. | {count} stavke vraćene su u Moje datoteke jer izvorni folderi više nisu dostupni. | {count} stavki vraćeno je u Moje datoteke jer izvorni folderi više nisu dostupni.",
+      "restored": "Vraćena {count} stavka | Vraćene {count} stavke | Vraćeno {count} stavki",
+      "restoredTitle": "Vraćeno"
+    },
+    "title": "Smeće"
   },
   "ui": {
     "aside": {

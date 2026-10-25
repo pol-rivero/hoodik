@@ -723,7 +723,7 @@ export const store = defineStore('files', () => {
   }
 
   /**
-   * Remove a single file from the storage
+   * Move a file the caller owns to trash, or drop a shared one from their view
    */
   async function remove(kp: KeyPair, file: Partial<AppFile>): Promise<void> {
     if (!file.id) {
@@ -738,7 +738,7 @@ export const store = defineStore('files', () => {
   }
 
   /**
-   * Delete many files from the list right away
+   * Move many files to trash (shared ones are only dropped from the view)
    */
   async function removeAll(kp: KeyPair, files: AppFile[]): Promise<void> {
     await meta.removeAll({ ids: files.map((f) => f.id) })

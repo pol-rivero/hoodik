@@ -5,7 +5,7 @@ use entity::{
     files,
     links::{self},
     user_files, users, ColumnTrait, ConnectionTrait, EntityTrait, Expr, IntoCondition, JoinType,
-    QueryFilter, QuerySelect, RelationTrait, Statement, Uuid,
+    QueryFilter, QuerySelect, RelationTrait, Select, Statement, Uuid,
 };
 use error::{AppResult, Error};
 
@@ -52,9 +52,17 @@ impl<'ctx> Repository<'ctx> {
         self.get_by_id(id).await
     }
 
-    /// Get a link by id and verify it is not expired.
+    /// Get a link by id for the public routes. A link to a trashed file
+    /// answers exactly like one that does not exist, and works again once
+    /// the file is restored.
     pub(crate) async fn get(&self, id: Uuid) -> AppResult<AppLink> {
-        let app_link = self.get_by_id(id).await?;
+        let app_link = self
+            .link_selector(id)
+            .filter(files::Column::TrashedAt.is_null())
+            .into_model::<AppLink>()
+            .one(&self.context.db)
+            .await?
+            .ok_or_else(|| Error::as_not_found("link"))?;
 
         Ok(app_link)
     }
@@ -166,6 +174,7 @@ impl<'ctx> Repository<'ctx> {
 
         let links = selector
             .filter(links::Column::UserId.eq(user_id))
+            .filter(files::Column::TrashedAt.is_null())
             .join(JoinType::InnerJoin, links::Relation::Users.def())
             .join(JoinType::InnerJoin, links::Relation::Files.def())
             .into_model::<AppLink>()
@@ -175,18 +184,12 @@ impl<'ctx> Repository<'ctx> {
         Ok(links)
     }
 
-    /// Load the link, file and user from the database and pack it into `AppLink`.
+    /// Load the link, file and user from the database and pack it into
+    /// `AppLink`, whether or not the file is in the trash, so its owner can
+    /// still manage the link.
     async fn get_by_id(&self, id: Uuid) -> AppResult<AppLink> {
-        let mut selector = links::Entity::find().select_only();
-
-        entity::join::add_columns_with_prefix::<_, links::Entity>(&mut selector, "link");
-        entity::join::add_columns_with_prefix::<_, users::Entity>(&mut selector, "user");
-        entity::join::add_columns_with_prefix::<_, files::Entity>(&mut selector, "file");
-
-        let app_link = selector
-            .filter(links::Column::Id.eq(id))
-            .join(JoinType::InnerJoin, links::Relation::Users.def())
-            .join(JoinType::InnerJoin, links::Relation::Files.def())
+        let app_link = self
+            .link_selector(id)
             .into_model::<AppLink>()
             .one(&self.context.db)
             .await?
@@ -195,11 +198,25 @@ impl<'ctx> Repository<'ctx> {
         Ok(app_link)
     }
 
+    fn link_selector(&self, id: Uuid) -> Select<links::Entity> {
+        let mut selector = links::Entity::find().select_only();
+
+        entity::join::add_columns_with_prefix::<_, links::Entity>(&mut selector, "link");
+        entity::join::add_columns_with_prefix::<_, users::Entity>(&mut selector, "user");
+        entity::join::add_columns_with_prefix::<_, files::Entity>(&mut selector, "file");
+
+        selector
+            .filter(links::Column::Id.eq(id))
+            .join(JoinType::InnerJoin, links::Relation::Users.def())
+            .join(JoinType::InnerJoin, links::Relation::Files.def())
+    }
+
     /// Before we create a shared link, we will first load the relation from the file
     /// to verify that the user trying to share the file is the actual owner of the file.
     async fn get_file_with_owner(&self, id: Uuid) -> AppResult<(files::Model, user_files::Model)> {
         let (file, user_file) = files::Entity::find()
             .filter(files::Column::Id.eq(id))
+            .filter(files::Column::TrashedAt.is_null())
             .join(
                 JoinType::InnerJoin,
                 files::Relation::UserFiles

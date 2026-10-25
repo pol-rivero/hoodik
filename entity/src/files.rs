@@ -62,6 +62,15 @@ pub struct Model {
     /// User who produced `members_list_signature`. FK to `users.id`,
     /// SET NULL on actor deletion so the audit trail survives.
     pub members_list_signed_by_user_id: Option<Uuid>,
+    /// When the row went to trash. NULL while the file is active. Every row
+    /// of a trashed subtree carries the same three trash values.
+    pub trashed_at: Option<i64>,
+    /// Id of the item the user trashed, shared by every row of that group.
+    /// Restore and purge act on the group as a whole.
+    pub trash_root_id: Option<Uuid>,
+    /// When the group becomes due for purge, fixed at trash time. `0` means
+    /// due now. A trashed row is restorable only while this is in the future.
+    pub purge_at: Option<i64>,
 }
 
 impl IntoFilename for Model {

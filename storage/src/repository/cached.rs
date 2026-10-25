@@ -3,7 +3,7 @@
 //! All the functions in here are shortcuts to the functions in the `Repository` struct.
 
 use cached::proc_macro::cached;
-use cached::SizedCache;
+use cached::{Cached, SizedCache};
 use context::Context;
 use entity::Uuid;
 
@@ -40,4 +40,11 @@ pub(crate) async fn get_file(context: &Context, owner_id: Uuid, file_id: Uuid) -
 pub(crate) async fn evict_file(file_id: Uuid) {
     let mut cache = REPOSITORY_GET_FILE.lock().await;
     cache.retain(|(_, id), _| *id != file_id);
+}
+
+/// Drop every cached file. Trash, restore and purge change the visibility of
+/// whole subtrees at once, for every user holding them, so there is no
+/// narrower set of entries to evict.
+pub(crate) async fn evict_all() {
+    REPOSITORY_GET_FILE.lock().await.cache_clear();
 }

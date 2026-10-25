@@ -352,7 +352,7 @@ const sizes = {
     >{{ $t('files.browser.selectedCount', { count: checkedRows.length }) }}</span>
 
     <BaseButton
-      :title="$t('common.delete')"
+      :title="$t('files.delete.trashLabel')"
       :iconSize="20"
       :xs="true"
       :icon="mdiTrashCanOutline"

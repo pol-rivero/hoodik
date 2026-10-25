@@ -113,7 +113,11 @@ pub(crate) async fn incoming_for_recipient<C: ConnectionTrait>(
     offset: u64,
     compact: bool,
 ) -> AppResult<(Vec<IncomingShare>, u64)> {
+    // Trashed files drop out before root detection, so neither the page
+    // nor `total` counts them.
     let mut all_query = user_files::Entity::find()
+        .join(JoinType::InnerJoin, user_files::Relation::Files.def())
+        .filter(files::Column::TrashedAt.is_null())
         .filter(user_files::Column::UserId.eq(recipient_id))
         .filter(user_files::Column::IsOwner.eq(false));
     if let Some(sender) = sender_filter {
@@ -522,8 +526,29 @@ pub(crate) async fn file_tree_owner_ids<C: ConnectionTrait>(
     Ok(rows)
 }
 
+/// [`file_tree_ids`] without anything in the trash: the subtree as clients
+/// see it through the listing, which hides trashed items. Grants check the
+/// entries they receive against this. Empty when the root itself is trashed.
+pub(crate) async fn active_file_tree_ids<C: ConnectionTrait>(
+    db: &C,
+    root_file_id: Uuid,
+) -> AppResult<Vec<Uuid>> {
+    let sql = r#"
+        WITH RECURSIVE file_tree(id, depth) AS (
+            SELECT id, 0 FROM files WHERE id = $1 AND trashed_at IS NULL
+            UNION ALL
+            SELECT child.id, parent.depth + 1 FROM files child
+            JOIN file_tree parent ON parent.id = child.file_id
+            WHERE parent.depth < 10000 AND child.trashed_at IS NULL
+        )
+        SELECT id FROM file_tree;
+    "#;
+    ids_from_raw_sql(db, sql, root_file_id).await
+}
+
 /// File subtree rooted at `root_file_id`, used for revoke cascade. Returns
-/// every descendant file id (folders + leaves) plus the root itself.
+/// every descendant file id (folders + leaves) plus the root itself, trashed
+/// ones included.
 ///
 /// The `depth` guard bounds the recursion: callers reject parent cycles
 /// before they can be written (see `move_into_shared`), and this cap is the
@@ -544,6 +569,14 @@ pub(crate) async fn file_tree_ids<C: ConnectionTrait>(
         )
         SELECT id FROM file_tree;
     "#;
+    ids_from_raw_sql(db, sql, root_file_id).await
+}
+
+async fn ids_from_raw_sql<C: ConnectionTrait>(
+    db: &C,
+    sql: &str,
+    root_file_id: Uuid,
+) -> AppResult<Vec<Uuid>> {
     let rows = files::Entity::find()
         .from_raw_sql(entity::Statement::from_sql_and_values(
             db.get_database_backend(),

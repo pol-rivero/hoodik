@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import CardBoxModal from '@/components/ui/CardBoxModal.vue'
 import type { FilesStore, KeyPair, AppFile } from 'types'
 import { notification, humanizeError } from '!/notify'
+import { isUnfinishedUpload } from '!/storage/trash'
 
 const props = defineProps<{
   modelValue: AppFile | undefined
@@ -17,32 +18,44 @@ const emits = defineEmits<{
   (event: 'update:modelValue', value: AppFile | undefined): void
 }>()
 
-const isDirectory = computed(() => props.modelValue?.mime === 'dir')
-
 /**
- * Deleting is permanent — there is no trash to fall back on — so a folder,
- * which takes everything under it, asks for its name to be typed. A single
- * file is one row the reader can see and name in the sentence above, and does
- * not earn the extra friction.
+ * What the server will actually do: a recipient only drops their own access,
+ * an upload that never finished is purged at once, and everything else the
+ * caller owns goes to trash. The copy must not promise a restore that the
+ * first two can't offer.
  */
-const typed = ref('')
+const mode = computed<'trash' | 'leave' | 'purge'>(() => {
+  const file = props.modelValue
+  if (file?.is_owner === false) return 'leave'
+  if (file && isUnfinishedUpload(file)) return 'purge'
+  return 'trash'
+})
 
-watch(
-  () => props.modelValue,
-  () => (typed.value = '')
-)
+const title = computed(() => {
+  if (mode.value === 'leave') return t('shares.revokeModal.selfTitle')
+  if (mode.value === 'purge') return t('trash.confirm.deleteForeverTitle')
+  return t('files.delete.trashTitle')
+})
 
-const confirmDisabled = computed(
-  () => isDirectory.value && typed.value.trim() !== props.modelValue?.name
-)
+const buttonLabel = computed(() => {
+  if (mode.value === 'leave') return t('shares.revokeModal.leave')
+  if (mode.value === 'purge') return t('trash.actions.deleteForever')
+  return t('files.delete.trashLabel')
+})
 
 const confirmRemove = async () => {
-  if (!props.modelValue || confirmDisabled.value) return
+  const file = props.modelValue
+  if (!file) return
+  const done = mode.value
 
   // The dialog closes once this settles, so a failure has to announce
   // itself — the row simply staying put reads as success.
   try {
-    await props.Storage.remove(props.kp, props.modelValue)
+    await props.Storage.remove(props.kp, file)
+    if (done === 'trash') notification(t('files.delete.movedTitle'), undefined, 'success')
+    if (done === 'leave') {
+      notification(t('nav.leave.removedTitle'), t('nav.leave.removedText'), 'success')
+    }
   } catch (err) {
     notification(t('errors.deleteFailed'), humanizeError(err), 'error')
   }
@@ -53,34 +66,34 @@ const confirmRemove = async () => {
 
 <template>
   <CardBoxModal
-    :title="$t('common.delete')"
+    :title="title"
     button="danger"
     :model-value="!!props.modelValue"
-    :button-label="$t('files.delete.confirmLabel')"
+    :button-label="buttonLabel"
     :has-cancel="true"
-    :confirm-disabled="confirmDisabled"
     @cancel="emits('update:modelValue', undefined)"
     :action="confirmRemove"
   >
-    <p>
+    <i18n-t
+      v-if="mode === 'leave'"
+      tag="p"
+      keypath="shares.revokeModal.selfBody"
+      scope="global"
+      data-testid="delete-leave-body"
+    >
+      <template #item>
+        <strong>{{ props.modelValue?.name }}</strong>
+      </template>
+    </i18n-t>
+    <p v-else-if="mode === 'purge'" data-testid="delete-purge-body">
+      {{ $t('trash.confirm.deleteForever', { name: props.modelValue?.name }) }}
+    </p>
+    <p v-else>
       {{
-        isDirectory
-          ? $t('files.delete.confirmDirectory', { name: props.modelValue?.name })
-          : $t('files.delete.confirmFile', { name: props.modelValue?.name })
+        props.modelValue?.mime === 'dir'
+          ? $t('files.delete.trashDirectory', { name: props.modelValue?.name })
+          : $t('files.delete.trashFile', { name: props.modelValue?.name })
       }}
     </p>
-
-    <label v-if="isDirectory" class="block mt-4 text-sm">
-      <span class="block mb-1.5">
-        {{ $t('files.delete.typeName', { name: props.modelValue?.name }) }}
-      </span>
-      <input
-        v-model="typed"
-        type="text"
-        autocomplete="off"
-        data-testid="delete-confirm-name"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-redish-400/60 dark:focus:ring-redish-500/50"
-      />
-    </label>
   </CardBoxModal>
 </template>

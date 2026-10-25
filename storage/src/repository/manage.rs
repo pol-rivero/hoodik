@@ -18,7 +18,6 @@ use crate::data::{
     rename::Rename, replace_content::ValidatedReplaceContent, response::Response,
     set_editable::SetEditable, update_hashes::UpdateHashes,
 };
-use futures::future::try_join_all;
 
 pub(crate) struct Manage<'repository, T: ConnectionTrait> {
     repository: &'repository Repository<'repository, T>,
@@ -201,58 +200,9 @@ where
             .collect();
         results.sort_by(|a, b| depths[id_to_idx[&a.id]].cmp(&depths[id_to_idx[&b.id]]));
 
-        if results.is_empty() {
-            return Err(Error::NotFound("directory_not_found".to_string()));
-        }
-
-        Ok(results)
-    }
-
-    /// Get the file or a directory, if we get a directory we will also
-    /// recursively get all the files and directories inside it
-    pub(crate) async fn file_tree(&self, id: Uuid) -> AppResult<Vec<AppFile>> {
-        let sql = r#"
-            WITH RECURSIVE file_tree(id, file_id) AS (
-            SELECT id, file_id FROM files WHERE id = $1
-            UNION ALL
-            SELECT child.id, child.file_id FROM files child
-            JOIN file_tree parent ON parent.id = child.file_id
-            )
-            SELECT id, file_id FROM file_tree;
-        "#;
-
-        let ids = files::Entity::find()
-            .from_raw_sql(Statement::from_sql_and_values(
-                self.repository.connection().get_database_backend(),
-                sql,
-                [id.into()],
-            ))
-            .into_json()
-            .all(self.repository.connection())
-            .await?
-            .into_iter()
-            .map(|json| {
-                let id = json.get("id").unwrap().as_str().unwrap_or_default();
-
-                match Uuid::from_str(id) {
-                    Ok(id) => id,
-                    Err(_) => Uuid::nil(),
-                }
-            })
-            .collect::<Vec<Uuid>>();
-
-        let user_id = self.owner_id;
-
-        let results = self
-            .repository
-            .selector(user_id, true)
-            .filter(files::Column::Id.is_in(ids))
-            .into_model::<AppFile>()
-            .all(self.repository.connection())
-            .await
-            .map_err(Error::from)?;
-
-        if results.is_empty() {
+        // The folder itself must be visible, not just some ancestor: a
+        // trashed folder under an active one would otherwise still list.
+        if !results.iter().any(|f| f.id == id) {
             return Err(Error::NotFound("directory_not_found".to_string()));
         }
 
@@ -301,6 +251,19 @@ where
         if let Some(f) = file_id {
             if ids.contains(&f) {
                 return Err(Error::BadRequest("cannot_move_to_itself".to_string()));
+            }
+
+            let destination = self.repository.by_id(f, self.owner_id).await?;
+            if !destination.is_dir() || !destination.is_writable() {
+                return Err(Error::BadRequest("parent_directory_not_found".to_string()));
+            }
+
+            // A folder moved under its own descendant would form a parent
+            // cycle that every recursive subtree walk then runs into.
+            for id in &ids {
+                if self.subtree_ids(*id).await?.contains(&f) {
+                    return Err(Error::BadRequest("cannot_move_to_itself".to_string()));
+                }
             }
         }
 
@@ -483,42 +446,16 @@ where
         self.repository.by_id(file.id, file.user_id).await
     }
 
-    /// Delete many files or directories for the owner. Each id in `ids`
-    /// must be one the caller owns; non-owner
-    /// ids are routed to [`Self::self_remove_recursive`] instead.
-    pub(crate) async fn delete_many(&self, ids: Vec<Uuid>) -> AppResult<Vec<AppFile>> {
-        let mut files = try_join_all(ids.into_iter().map(|id| self.file_tree(id)))
-            .await?
-            .into_iter()
-            .flatten()
-            .filter(|f| f.is_owner)
-            .collect::<Vec<AppFile>>();
-
-        // Sort files by id and then run dedup_by to remove all duplicates,
-        // without sorting, this won't remove all duplicates
-        files.sort_by_key(|a| a.id);
-        files.dedup_by(|a, b| a.id == b.id);
-
-        let ids: Vec<Uuid> = files.iter().map(|f| f.id).collect();
-
-        files::Entity::delete_many()
-            .filter(files::Column::Id.is_in(ids))
-            .exec(self.repository.connection())
-            .await?;
-
-        Ok(files)
-    }
-
     /// "Remove from my view" — drop the caller's `user_files` row for
     /// each id and for every descendant in the case of folders, without
     /// touching the file itself or any other recipient's row.
     /// Reader/Editor/Co-owner DELETEs are routed here.
     pub(crate) async fn self_remove_recursive(&self, ids: Vec<Uuid>) -> AppResult<()> {
-        // Collect every file_id the caller can see under each root,
-        // owner or non-owner. The cascade we want to drop is exactly
-        // the caller's user_files rows (`is_owner=false`) — owner-row
-        // self-deletes are nonsense (an owner's "delete" is the real
-        // delete handled above).
+        // Collect every file_id under each root, owner or non-owner,
+        // trashed or not. The cascade we want to drop is exactly the
+        // caller's user_files rows (`is_owner=false`) — owner-row
+        // self-deletes are nonsense (an owner's "delete" moves the item to
+        // the trash instead).
         let mut all_ids: Vec<Uuid> = Vec::new();
         for id in ids {
             let subtree = self.subtree_ids(id).await?;
@@ -540,19 +477,13 @@ where
         Ok(())
     }
 
-    /// `file_tree(root)` but returning bare `file_id`s with no
-    /// ownership filter. Used by [`Self::self_remove_recursive`] which
-    /// only needs the id set.
+    /// Every id in the subtree rooted at `root_id`, the root included, with
+    /// no ownership or trash filter: removals and cycle checks must cover
+    /// trashed descendants too.
     pub(crate) async fn subtree_ids(&self, root_id: Uuid) -> AppResult<Vec<Uuid>> {
-        let sql = r#"
-            WITH RECURSIVE file_tree(id, file_id) AS (
-            SELECT id, file_id FROM files WHERE id = $1
-            UNION ALL
-            SELECT child.id, child.file_id FROM files child
-            JOIN file_tree parent ON parent.id = child.file_id
-            )
-            SELECT id FROM file_tree;
-        "#;
+        // Depth-guarded: the delete and move-many paths walk this, and a
+        // parent cycle left by an older move must not recurse without bound.
+        let sql = entity::trash::subtree_sql(1);
         let rows = files::Entity::find()
             .from_raw_sql(Statement::from_sql_and_values(
                 self.repository.connection().get_database_backend(),
@@ -583,14 +514,13 @@ where
         content_tags: SearchTags,
         digest_tags: DigestTags,
     ) -> AppResult<AppFile> {
-        if let Some(file_id) = create_file.file_id.clone().into_value() {
-            if file_id.to_string().as_str() != "NULL" {
-                let parent = self.repository.by_id(file_id, self.owner_id).await?;
-
-                if !parent.is_owner || !parent.is_dir() {
-                    return Err(Error::BadRequest("parent_directory_not_found".to_string()));
-                }
-            }
+        if let Some(parent) = create_file
+            .file_id
+            .clone()
+            .into_value()
+            .and_then(entity::value_to_uuid)
+        {
+            self.require_parent_directory(parent).await?;
         }
 
         let file_id = entity::active_value_to_uuid(create_file.id.clone())
@@ -632,6 +562,33 @@ where
             .by_id(file_id, self.owner_id)
             .await
             .map(|f| f.is_new(true))
+    }
+
+    /// A new file may only go into an active folder the caller owns: 404
+    /// `file_not_found:<id>` when the parent is missing, trashed or not
+    /// visible to the caller, 400 `parent_directory_not_found` otherwise.
+    pub(crate) async fn require_parent_directory(&self, parent_id: Uuid) -> AppResult<()> {
+        let parent = self.repository.by_id(parent_id, self.owner_id).await?;
+
+        if !parent.is_owner || !parent.is_dir() {
+            return Err(Error::BadRequest("parent_directory_not_found".to_string()));
+        }
+
+        Ok(())
+    }
+
+    /// [`Self::require_parent_directory`] that also accepts a shared folder
+    /// the caller can write to. A version fork keeps the copy next to the
+    /// note it came from, and an editor's own note may sit in someone
+    /// else's folder.
+    pub(crate) async fn require_writable_parent_directory(&self, parent_id: Uuid) -> AppResult<()> {
+        let parent = self.repository.by_id(parent_id, self.owner_id).await?;
+
+        if !parent.is_writable() || !parent.is_dir() {
+            return Err(Error::BadRequest("parent_directory_not_found".to_string()));
+        }
+
+        Ok(())
     }
 
     /// Update the content hashes of a file after upload completes.

@@ -199,6 +199,45 @@ pub(super) async fn move_folder_into_shared(
             .await?;
     }
 
+    // The client never saw the trashed part of the subtree, so it sent no
+    // wraps for it and those nodes were not re-bound above. Members who are
+    // not on the destination roster lose their rows there; members who are
+    // keep their existing wrap but take the destination's role, exactly as
+    // the re-bind does for active nodes. New members get nothing there.
+    let trashed: Vec<Uuid> = queries::file_tree_ids(&tx, root_id)
+        .await?
+        .into_iter()
+        .filter(|id| !parsed.contains_key(id))
+        .collect();
+    if !trashed.is_empty() {
+        user_files::Entity::delete_many()
+            .filter(user_files::Column::IsOwner.eq(false))
+            .filter(user_files::Column::FileId.is_in(trashed.clone()))
+            .filter(user_files::Column::UserId.is_not_in(roster.iter().map(|r| r.user_id)))
+            .exec(&tx)
+            .await?;
+
+        let now = Utc::now().timestamp();
+        for member in roster.iter().filter(|r| r.user_id != caller.id) {
+            user_files::Entity::update_many()
+                .set(user_files::ActiveModel {
+                    share_role: ActiveValue::Set(member.share_role.clone()),
+                    shared_at: ActiveValue::Set(Some(now)),
+                    shared_by_user_id: ActiveValue::Set(Some(caller.id)),
+                    member_signed_at: ActiveValue::Set(
+                        member.member_signature.as_ref().map(|_| signed_timestamp),
+                    ),
+                    member_signature: ActiveValue::Set(member.member_signature.clone()),
+                    ..Default::default()
+                })
+                .filter(user_files::Column::UserId.eq(member.user_id))
+                .filter(user_files::Column::IsOwner.eq(false))
+                .filter(user_files::Column::FileId.is_in(trashed.clone()))
+                .exec(&tx)
+                .await?;
+        }
+    }
+
     audit::append_event(
         &tx,
         NewAuditEvent {
@@ -256,6 +295,7 @@ impl Repository<'_> {
         let source = files::Entity::find_by_id(file_id)
             .one(&self.context.db)
             .await?
+            .filter(|source| source.trashed_at.is_none())
             .ok_or_else(|| Error::NotFound("file_not_found".to_string()))?;
         let current_parent = source
             .file_id
@@ -305,6 +345,7 @@ impl Repository<'_> {
             let dest = files::Entity::find_by_id(dest_id)
                 .one(&self.context.db)
                 .await?
+                .filter(|dest| dest.trashed_at.is_none())
                 .ok_or_else(|| Error::NotFound("destination_folder_not_found".to_string()))?;
             if dest.mime != "dir" {
                 return Err(Error::BadRequest("destination_not_a_folder".to_string()));
@@ -430,7 +471,12 @@ async fn assert_entries_match_subtree<'a, C: ConnectionTrait, I>(
 where
     I: Iterator<Item = &'a Uuid>,
 {
-    let subtree: HashSet<Uuid> = queries::file_tree_ids(db, root_id).await?.into_iter().collect();
+    // Against the active subtree: clients walk the listing, which hides the
+    // trash, and the trashed nodes are reconciled separately.
+    let subtree: HashSet<Uuid> = queries::active_file_tree_ids(db, root_id)
+        .await?
+        .into_iter()
+        .collect();
     if subtree.is_empty() {
         return Err(Error::NotFound("file_not_found".to_string()));
     }

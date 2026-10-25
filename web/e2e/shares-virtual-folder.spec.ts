@@ -334,8 +334,7 @@ test.describe('Select all next to the virtual folder', () => {
     await expect(page.getByTestId('files-selected-count')).toHaveText(/^2 selected$/)
 
     await page.keyboard.press('Delete')
-    await page.getByTestId('delete-confirm-count').fill('2')
-    await page.getByRole('button', { name: 'Yes, delete' }).click()
+    await page.getByRole('dialog', { name: 'Move to trash' }).getByRole('button', { name: 'Move to trash' }).click()
 
     await expect(page.getByTestId('file-row-Folder_A')).not.toBeVisible()
     await expect(page.getByTestId('file-row-Folder_B')).not.toBeVisible()

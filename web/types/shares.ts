@@ -258,6 +258,11 @@ export interface Capabilities {
    * `server_version`.
    */
   direct_transfer?: boolean
+  /**
+   * Absent on servers without trash. The web client ships with its server
+   * and never reads this; it is typed for parity with the mobile clients.
+   */
+  trash?: { enabled: boolean; retention_days: number }
 }
 
 export interface FolderMember {

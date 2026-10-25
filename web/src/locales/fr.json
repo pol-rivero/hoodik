@@ -202,6 +202,10 @@
       "sharing": "Partage",
       "sharingHint": "Si désactivé, l’entrée Partager disparaît de chaque ligne de fichier et tous les endpoints {endpoint} renvoient 503. Les partages existants sont conservés d’une bascule à l’autre ; rien n’est supprimé.",
       "title": "Paramètres de l’application",
+      "trash": "Corbeille",
+      "trashRetention": "Jours de conservation des éléments supprimés",
+      "trashRetentionHint": "Les éléments supprimés restent dans la corbeille de leur propriétaire pendant cette durée, et comptent dans le quota, puis sont supprimés définitivement. Les modifications s'appliquent aux éléments supprimés à partir de maintenant.",
+      "trashRetentionInvalid": "Saisissez un nombre entier de jours entre 1 et 3650.",
       "whitelist": "Liste blanche",
       "whitelistHint": "Seules les adresses e-mail correspondant à ces motifs peuvent s’inscrire. Utilisez des motifs de type {exampleDomain} ou {exampleAny}. Laissez vide pour autoriser toutes les adresses."
     },
@@ -486,10 +490,12 @@
     "pdfImagesDropped": "Certaines images n'ont pas pu être incluses dans le PDF",
     "pending_chunks_not_set": "L’état du téléversement est incomplet",
     "pending_size_not_set": "L’état du téléversement est incomplet",
-    "quota_exceeded": "Quota de stockage dépassé",
+    "purgeFailed": "Suppression impossible : l'élément est toujours dans la corbeille",
+    "quota_exceeded": "Quota de stockage dépassé. Les éléments de la corbeille y sont toujours comptés.",
     "registration_not_allowed": "L’inscription n’est pas autorisée pour cette adresse e-mail",
     "requestFailed": "La requête a échoué",
     "required": "Ce champ est requis",
+    "restoreFailed": "Restauration impossible : l'élément est toujours dans la corbeille",
     "rewrap_batch_too_large": "Le lot de migration de clés est trop volumineux",
     "rewrapped_key_not_owned": "Impossible de migrer une clé qui ne vous appartient pas",
     "rewrapped_link_key_not_owned": "Impossible de migrer une clé de lien qui ne vous appartient pas",
@@ -549,14 +555,13 @@
       "title": "Créer un nouveau fichier"
     },
     "delete": {
-      "confirmDirectory": "Voulez-vous vraiment supprimer définitivement le dossier « {name} » ?",
-      "confirmFile": "Voulez-vous vraiment supprimer définitivement « {name} » ?",
-      "confirmLabel": "Oui, supprimer",
-      "confirmMany": "Voulez-vous vraiment supprimer {count} éléments ?",
-      "confirmManyFolders": "{count} d'entre eux est un dossier — tout ce qu'il contient part aussi. | {count} d'entre eux sont des dossiers — tout ce qu'ils contiennent part aussi.",
-      "selectedTitle": "Supprimer la sélection",
-      "typeCount": "Saisissez {count} pour confirmer",
-      "typeName": "Saisissez {name} pour confirmer"
+      "movedTitle": "Mis à la corbeille",
+      "sharedNote": "Les éléments partagés avec vous sont seulement retirés de votre vue ; ils ne vont pas dans votre corbeille.",
+      "trashDirectory": "Mettre le dossier « {name} » et tout son contenu à la corbeille ? Vous pourrez le restaurer depuis la corbeille.",
+      "trashFile": "Mettre « {name} » à la corbeille ? Vous pourrez le restaurer depuis la corbeille.",
+      "trashLabel": "Mettre à la corbeille",
+      "trashMany": "Mettre {count} élément à la corbeille ? Vous pourrez le restaurer depuis la corbeille. | Mettre {count} éléments à la corbeille ? Vous pourrez les restaurer depuis la corbeille.",
+      "trashTitle": "Mettre à la corbeille"
     },
     "details": {
       "uploaded": "Téléversé"
@@ -756,6 +761,7 @@
       "notes": "Notes",
       "share": "Partage",
       "theme": "Thème",
+      "trash": "Corbeille",
       "users": "Utilisateurs"
     },
     "title": {
@@ -780,6 +786,7 @@
       "registerResend": "Créer un compte - Renvoyer l’e-mail d’activation",
       "registerTwoFactor": "Créer un compte - Authentification à deux facteurs",
       "setupLockScreen": "Configurer l’écran de verrouillage",
+      "trash": "Corbeille",
       "verifyEmail": "Créer un compte - Vérifier l’e-mail"
     },
     "upload": {
@@ -851,12 +858,11 @@
       "conflictTitle": "Un autre enregistrement est en cours",
       "convertAction": "Convertir en note modifiable",
       "converting": "Conversion…",
-      "deleteConfirm": "Voulez-vous vraiment supprimer « {name} » ?",
-      "deleteTitle": "Supprimer la note",
       "moveConfirmLabel": "Déplacer ici",
       "moveDestination": "Déplacer « {name} » vers {folder}",
       "moveTitle": "Déplacer vers un dossier",
-      "readOnly": "Ce fichier markdown est en lecture seule."
+      "readOnly": "Ce fichier markdown est en lecture seule.",
+      "trashConfirm": "Mettre la note « {name} » à la corbeille ?"
     },
     "nextImage": "Image suivante",
     "noPreview": "Aucun aperçu disponible",
@@ -1183,6 +1189,38 @@
   },
   "time": {
     "justNow": "à l’instant"
+  },
+  "trash": {
+    "actions": {
+      "deleteForever": "Supprimer définitivement",
+      "empty": "Vider la corbeille",
+      "restore": "Restaurer"
+    },
+    "columns": {
+      "deleted": "Supprimé",
+      "expires": "Suppression définitive"
+    },
+    "confirm": {
+      "deleteForever": "Supprimer « {name} » définitivement ? Cette action est irréversible.",
+      "deleteForeverMany": "Supprimer {count} élément définitivement ? Cette action est irréversible. | Supprimer {count} éléments définitivement ? Cette action est irréversible.",
+      "deleteForeverTitle": "Supprimer définitivement",
+      "empty": "Supprimer définitivement {count} élément de la corbeille ? Cette action est irréversible. | Supprimer définitivement les {count} éléments de la corbeille ? Cette action est irréversible.",
+      "emptyTitle": "Vider la corbeille"
+    },
+    "emptyState": "La corbeille est vide",
+    "expiresIn": "dans {count} jour | dans {count} jours",
+    "expiresLine": "Suppression définitive {when}",
+    "expiresToday": "aujourd'hui",
+    "notify": {
+      "conflict": "Un élément du même nom existe déjà à cet endroit. Renommez-le ou déplacez-le, puis réessayez.",
+      "conflictTitle": "Certains éléments n'ont pas été restaurés",
+      "missing": "{count} élément n'a pas pu être restauré : il a déjà été restauré ou supprimé définitivement. | {count} éléments n'ont pas pu être restaurés : ils ont déjà été restaurés ou supprimés définitivement.",
+      "relocated": "« {name} » a été restauré dans Mes fichiers, car son dossier d'origine n'est plus disponible.",
+      "relocatedMany": "{count} élément a été restauré dans Mes fichiers, car son dossier d'origine n'est plus disponible. | {count} éléments ont été restaurés dans Mes fichiers, car leurs dossiers d'origine ne sont plus disponibles.",
+      "restored": "{count} élément restauré | {count} éléments restaurés",
+      "restoredTitle": "Restauré"
+    },
+    "title": "Corbeille"
   },
   "ui": {
     "aside": {

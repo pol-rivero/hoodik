@@ -363,6 +363,38 @@ impl<'ctx> Repository<'ctx> {
             }
         }
 
+        // Trashed descendants are not in `entries` (clients walk the listing,
+        // which hides them), but the recipient's existing rows on them must
+        // follow a role change: restored, they would otherwise bring the old
+        // role back. Those rows already hold a valid wrap; only the role and
+        // the signature committing to it move. No row is created there.
+        let entry_ids: HashSet<Uuid> = entries.iter().map(|e| e.0).collect();
+        let trashed: Vec<Uuid> = queries::file_tree_ids(&tx, root_file_id)
+            .await?
+            .into_iter()
+            .filter(|id| !entry_ids.contains(id))
+            .collect();
+        if !trashed.is_empty() {
+            let mut rebind = user_files::ActiveModel {
+                share_role: ActiveValue::Set(requested_role_str.to_string()),
+                shared_at: ActiveValue::Set(Some(now)),
+                shared_by_user_id: ActiveValue::Set(Some(sender.id)),
+                ..Default::default()
+            };
+            if let Some(sig) = persisted_member_sig.as_ref() {
+                rebind.member_signature = ActiveValue::Set(Some(sig.clone()));
+                rebind.member_signed_at = ActiveValue::Set(member_signed_at_col);
+            }
+            user_files::Entity::update_many()
+                .set(rebind)
+                .filter(user_files::Column::UserId.eq(recipient.id))
+                .filter(user_files::Column::IsOwner.eq(false))
+                .filter(user_files::Column::ShareRole.ne(requested_role_str))
+                .filter(user_files::Column::FileId.is_in(trashed))
+                .exec(&tx)
+                .await?;
+        }
+
         if !produced.is_empty() {
             // Membership-mutation bookkeeping for the folder member-list
             // protocol. The TOCTOU check in `upload-multikey` /
@@ -673,6 +705,10 @@ impl<'ctx> Repository<'ctx> {
                     })
                     .exec(&tx)
                     .await?;
+                    // Out from under a trashed folder, the file would still
+                    // belong to that folder's trash group; give it its own,
+                    // in its owner's trash.
+                    entity::trash::reroot_if_trashed(&tx, file.id, now).await?;
                     audit::append_event(
                         &tx,
                         NewAuditEvent {
@@ -752,12 +788,16 @@ fn parse_entries(raw: &[CreateShareEntry]) -> AppResult<Vec<(Uuid, String)>> {
     Ok(out)
 }
 
+/// Clients walk the folder through the listing, which hides the trash, so
+/// the entries are checked against the active subtree. Trashed descendants
+/// get no row for the new recipient: they stay out of reach after a restore
+/// rather than leak.
 async fn verify_entries_match_subtree<C: ConnectionTrait>(
     db: &C,
     root_file_id: Uuid,
     entries: &[(Uuid, String)],
 ) -> AppResult<()> {
-    let subtree = queries::file_tree_ids(db, root_file_id).await?;
+    let subtree = queries::active_file_tree_ids(db, root_file_id).await?;
     let subtree_set: HashSet<Uuid> = subtree.into_iter().collect();
     if subtree_set.is_empty() {
         return Err(Error::NotFound("root_file_not_found".to_string()));

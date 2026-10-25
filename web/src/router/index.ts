@@ -16,6 +16,15 @@ const router = createRouter({
      * File routes
      */
     {
+      path: '/trash',
+      name: 'trash',
+      meta: {
+        files: true,
+        title: 'nav.title.trash'
+      },
+      component: () => import('../views/trash/TrashView.vue')
+    },
+    {
       path: '/:file_id?',
       name: 'files',
       meta: {

@@ -6,7 +6,10 @@
 use error::AppResult;
 use sea_orm::ConnectionTrait;
 
-use crate::{user_files, ColumnTrait, EntityTrait, QueryFilter, Uuid};
+use crate::{
+    files, user_files, ColumnTrait, EntityTrait, JoinType, QueryFilter, QuerySelect, RelationTrait,
+    Uuid,
+};
 
 /// Outcome of a `(file_id, user_id)` lookup against `user_files`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -56,12 +59,17 @@ impl SharePermission {
 /// lookup. Owner rows return `Owner` regardless of their `share_role`
 /// value (the convention is `'co-owner'` from migration 1; the helper
 /// treats it as moot).
+///
+/// A file in the trash resolves to `None` for everyone, owner included, so
+/// every route gated here treats it as absent.
 pub async fn permission(
     db: &impl ConnectionTrait,
     file_id: Uuid,
     user_id: Uuid,
 ) -> AppResult<SharePermission> {
     let row = user_files::Entity::find()
+        .join(JoinType::InnerJoin, user_files::Relation::Files.def())
+        .filter(files::Column::TrashedAt.is_null())
         .filter(user_files::Column::FileId.eq(file_id))
         .filter(user_files::Column::UserId.eq(user_id))
         .one(db)
@@ -70,9 +78,9 @@ pub async fn permission(
     Ok(map_row(row.as_ref()))
 }
 
-/// Batch variant for routes that act on many files at once (`delete_many`,
-/// `move_many`). Returns a permission per requested id, with `None` for
-/// ids that have no `user_files` row for the caller.
+/// Batch variant for routes that act on many files at once (`move_many`).
+/// Returns a permission per requested id, with `None` for ids that have no
+/// `user_files` row for the caller or that are in the trash.
 pub async fn permissions_for(
     db: &impl ConnectionTrait,
     file_ids: &[Uuid],
@@ -85,6 +93,8 @@ pub async fn permissions_for(
     }
 
     let rows = user_files::Entity::find()
+        .join(JoinType::InnerJoin, user_files::Relation::Files.def())
+        .filter(files::Column::TrashedAt.is_null())
         .filter(user_files::Column::UserId.eq(user_id))
         .filter(user_files::Column::FileId.is_in(file_ids.iter().copied()))
         .all(db)
@@ -96,6 +106,48 @@ pub async fn permissions_for(
         .collect();
     for row in rows {
         by_file.insert(row.file_id, map_row(Some(&row)));
+    }
+    Ok(by_file)
+}
+
+/// [`permissions_for`] that still sees trashed files, paired with whether
+/// each one is trashed. Only the delete routes want this: deleting an item
+/// that is already in the trash is a no-op rather than a missing file.
+pub async fn permissions_for_including_trashed(
+    db: &impl ConnectionTrait,
+    file_ids: &[Uuid],
+    user_id: Uuid,
+) -> AppResult<std::collections::HashMap<Uuid, (SharePermission, bool)>> {
+    use std::collections::{HashMap, HashSet};
+
+    if file_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let rows = user_files::Entity::find()
+        .filter(user_files::Column::UserId.eq(user_id))
+        .filter(user_files::Column::FileId.is_in(file_ids.iter().copied()))
+        .all(db)
+        .await?;
+
+    let trashed: HashSet<Uuid> = files::Entity::find()
+        .select_only()
+        .column(files::Column::Id)
+        .filter(files::Column::Id.is_in(file_ids.iter().copied()))
+        .filter(files::Column::TrashedAt.is_not_null())
+        .into_tuple::<Uuid>()
+        .all(db)
+        .await?
+        .into_iter()
+        .collect();
+
+    let mut by_file: HashMap<Uuid, (SharePermission, bool)> = file_ids
+        .iter()
+        .map(|id| (*id, (SharePermission::None, trashed.contains(id))))
+        .collect();
+    for row in rows {
+        let is_trashed = trashed.contains(&row.file_id);
+        by_file.insert(row.file_id, (map_row(Some(&row)), is_trashed));
     }
     Ok(by_file)
 }

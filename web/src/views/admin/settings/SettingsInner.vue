@@ -34,7 +34,11 @@ const save = async () => {
     notify({ text: t('admin.settings.saved'), type: 'success' })
   } catch (err) {
     const error = err as ErrorResponse<unknown>
-    updateError.value = error.description
+    // The generic 422 message ("Validation error") is not translated and
+    // doesn't say which field failed.
+    updateError.value = error.validation?.['trash.retention_days']
+      ? t('admin.settings.trashRetentionInvalid')
+      : error.description
   }
 
   loading.value = false

@@ -212,8 +212,14 @@ pub(crate) async fn fork(
     // resurrecting the reversible value the migration purged.
     payload.sha256 = sha256.filter(|v| !cryptfns::search::is_bare_digest(v));
 
-    let (mut active_model, encrypted_key, search_tags, content_tags, digest_tags, _size, _parent) =
+    let (mut active_model, encrypted_key, search_tags, content_tags, digest_tags, _size, parent) =
         payload.into_active_model()?;
+    if let Some(parent) = parent {
+        Repository::new(&context.db)
+            .manage(claims.sub)
+            .require_writable_parent_directory(parent)
+            .await?;
+    }
     // Skip the chunk-upload pass — chunks land via copy_version below.
     let now = Utc::now().timestamp();
     active_model.chunks_stored = ActiveValue::Set(Some(chunks));

@@ -21,6 +21,7 @@ pub mod search;
 pub mod set_editable;
 pub mod stats;
 pub mod thumbnail;
+pub mod trash;
 pub mod update_hashes;
 pub mod upload;
 pub(crate) mod upload_tar;
@@ -46,6 +47,13 @@ pub mod versions;
 /// Register the storage routes
 /// on to the application server
 pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {
+    // First, ahead of every `/api/storage/{file_id}` route: actix-web walks
+    // services in registration order, and the download route would take
+    // `GET /api/storage/trash` and fail on the UUID parse.
+    cfg.service(trash::list);
+    cfg.service(trash::restore);
+    cfg.service(trash::purge);
+    cfg.service(trash::empty);
     cfg.service(chunk_urls::download_urls);
     cfg.service(chunk_urls::upload_urls);
     cfg.service(chunk_urls::finalize);

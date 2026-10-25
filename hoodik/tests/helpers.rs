@@ -129,6 +129,9 @@ pub(crate) async fn seed_owned_files<C: entity::ConnectionTrait>(
             members_list_signature: ActiveValue::Set(None),
             members_list_signed_at: ActiveValue::Set(None),
             members_list_signed_by_user_id: ActiveValue::Set(None),
+            trashed_at: ActiveValue::Set(None),
+            trash_root_id: ActiveValue::Set(None),
+            purge_at: ActiveValue::Set(None),
         });
 
         user_file_rows.push(user_files::ActiveModel {

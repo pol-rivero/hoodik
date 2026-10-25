@@ -202,6 +202,10 @@
       "sharing": "Sharing",
       "sharingHint": "When off, the Share entry vanishes from every file row and all {endpoint} endpoints return 503. Existing share rows are preserved across toggles; nothing is deleted.",
       "title": "Application Settings",
+      "trash": "Trash",
+      "trashRetention": "Days to keep deleted items",
+      "trashRetentionHint": "Deleted items stay in their owner's trash this long, still counting toward quota, then are removed for good. Changes apply to items deleted from now on.",
+      "trashRetentionInvalid": "Enter a whole number of days from 1 to 3650.",
       "whitelist": "Whitelist",
       "whitelistHint": "Only emails matching these patterns can register. Use {exampleDomain} or {exampleAny} style globs. Leave empty to allow any email."
     },
@@ -486,10 +490,12 @@
     "pdfImagesDropped": "Some images could not be included in the PDF",
     "pending_chunks_not_set": "Upload state is incomplete",
     "pending_size_not_set": "Upload state is incomplete",
-    "quota_exceeded": "Storage quota exceeded",
+    "purgeFailed": "Couldn't delete. The item is still in trash.",
+    "quota_exceeded": "Storage quota exceeded. Items in Trash still count toward it.",
     "registration_not_allowed": "Registration is not allowed for this email",
     "requestFailed": "Request failed",
     "required": "This field is required",
+    "restoreFailed": "Couldn't restore. The item is still in trash.",
     "rewrap_batch_too_large": "Key migration batch is too large",
     "rewrapped_key_not_owned": "Cannot migrate a key you do not own",
     "rewrapped_link_key_not_owned": "Cannot migrate a link key you do not own",
@@ -549,14 +555,13 @@
       "title": "Create a new file"
     },
     "delete": {
-      "confirmDirectory": "Are you sure you want to delete the folder '{name}' forever?",
-      "confirmFile": "Are you sure you want to delete '{name}' forever?",
-      "confirmLabel": "Yes, delete",
-      "confirmMany": "Are you sure you want to delete {count} items?",
-      "confirmManyFolders": "{count} of them is a folder — everything inside goes too. | {count} of them are folders — everything inside goes too.",
-      "selectedTitle": "Delete selected",
-      "typeCount": "Type {count} to confirm",
-      "typeName": "Type {name} to confirm"
+      "movedTitle": "Moved to trash",
+      "sharedNote": "Items shared with you are only removed from your view; they don't go to your trash.",
+      "trashDirectory": "Move the folder '{name}' and everything in it to trash? You can restore it from Trash.",
+      "trashFile": "Move '{name}' to trash? You can restore it from Trash.",
+      "trashLabel": "Move to trash",
+      "trashMany": "Move {count} item to trash? You can restore it from Trash. | Move {count} items to trash? You can restore them from Trash.",
+      "trashTitle": "Move to trash"
     },
     "details": {
       "uploaded": "Uploaded"
@@ -756,6 +761,7 @@
       "notes": "Notes",
       "share": "Sharing",
       "theme": "Theme",
+      "trash": "Trash",
       "users": "Users"
     },
     "title": {
@@ -780,6 +786,7 @@
       "registerResend": "Create Account - Resend Activation Email",
       "registerTwoFactor": "Create Account - Two-Factor Authentication",
       "setupLockScreen": "Setup Lock Screen",
+      "trash": "Trash",
       "verifyEmail": "Create Account - Verify Email"
     },
     "upload": {
@@ -851,12 +858,11 @@
       "conflictTitle": "Another save is in progress",
       "convertAction": "Convert to an editable note",
       "converting": "Converting...",
-      "deleteConfirm": "Are you sure you want to delete '{name}'?",
-      "deleteTitle": "Delete note",
       "moveConfirmLabel": "Move here",
       "moveDestination": "Move '{name}' to {folder}",
       "moveTitle": "Move to folder",
-      "readOnly": "This markdown file is read-only."
+      "readOnly": "This markdown file is read-only.",
+      "trashConfirm": "Move the note '{name}' to trash?"
     },
     "nextImage": "Next image",
     "noPreview": "No preview available",
@@ -1183,6 +1189,38 @@
   },
   "time": {
     "justNow": "just now"
+  },
+  "trash": {
+    "actions": {
+      "deleteForever": "Delete forever",
+      "empty": "Empty trash",
+      "restore": "Restore"
+    },
+    "columns": {
+      "deleted": "Deleted",
+      "expires": "Deleted forever"
+    },
+    "confirm": {
+      "deleteForever": "Delete '{name}' forever? This cannot be undone.",
+      "deleteForeverMany": "Delete {count} item forever? This cannot be undone. | Delete {count} items forever? This cannot be undone.",
+      "deleteForeverTitle": "Delete forever",
+      "empty": "Delete {count} item in trash forever? This cannot be undone. | Delete all {count} items in trash forever? This cannot be undone.",
+      "emptyTitle": "Empty trash"
+    },
+    "emptyState": "Trash is empty",
+    "expiresIn": "in {count} day | in {count} days",
+    "expiresLine": "Deleted forever {when}",
+    "expiresToday": "today",
+    "notify": {
+      "conflict": "An item with the same name already exists there. Rename or move it, then try again.",
+      "conflictTitle": "Some items were not restored",
+      "missing": "{count} item could no longer be restored. It was already restored or deleted forever. | {count} items could no longer be restored. They were already restored or deleted forever.",
+      "relocated": "'{name}' was restored to My files because its original folder is no longer available.",
+      "relocatedMany": "{count} item was restored to My files because its original folder is no longer available. | {count} items were restored to My files because their original folders are no longer available.",
+      "restored": "{count} item restored | {count} items restored",
+      "restoredTitle": "Restored"
+    },
+    "title": "Trash"
   },
   "ui": {
     "aside": {

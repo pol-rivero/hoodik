@@ -195,21 +195,31 @@ async fn get_file_tree_with_right_ordering() {
 
     let ids = manual.iter().map(|f| f.id).collect::<Vec<_>>();
 
-    let response = repository.manage(user.id).file_tree(dir_id).await.unwrap();
+    let response = repository
+        .manage(user.id)
+        .subtree_ids(dir_id)
+        .await
+        .unwrap();
 
-    for file in response.iter() {
-        assert!(ids.contains(&file.id));
+    assert_eq!(response.first().copied(), Some(dir_id));
+    assert_eq!(response.len(), 3, "dir, dir2 and dir3");
+    for id in response.iter() {
+        assert!(ids.contains(id));
     }
 
     let response = repository
         .manage(user.id)
-        .file_tree(file1_id)
+        .subtree_ids(file1_id)
         .await
         .unwrap();
 
-    assert_eq!(response.first().unwrap().id, file1_id);
+    assert_eq!(response, vec![file1_id]);
 
-    let response = repository.manage(user.id).file_tree(dir3_id).await.unwrap();
+    let response = repository
+        .manage(user.id)
+        .subtree_ids(dir3_id)
+        .await
+        .unwrap();
 
-    assert_eq!(response.first().unwrap().id, dir3_id);
+    assert_eq!(response, vec![dir3_id]);
 }

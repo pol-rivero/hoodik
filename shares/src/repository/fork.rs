@@ -172,6 +172,9 @@ impl Repository<'_> {
             members_list_signature: ActiveValue::Set(None),
             members_list_signed_at: ActiveValue::Set(None),
             members_list_signed_by_user_id: ActiveValue::Set(None),
+            trashed_at: ActiveValue::Set(None),
+            trash_root_id: ActiveValue::Set(None),
+            purge_at: ActiveValue::Set(None),
         };
         files::Entity::insert(file_active)
             .exec_without_returning(&tx)

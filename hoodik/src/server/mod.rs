@@ -140,6 +140,9 @@ pub async fn engage(context: Context) -> AppResult<()> {
     // of the boot.
     fs::direct::probe(&context.config).await;
 
+    // Once per process, not per worker: the purge pass runs on this runtime.
+    storage::trash::spawn_purger(context.clone());
+
     let bind_address = context.config.get_full_bind_address();
     let disabled = context.config.ssl.disabled;
     let app_url = context.config.get_app_url();

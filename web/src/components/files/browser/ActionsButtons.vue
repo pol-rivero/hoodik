@@ -90,8 +90,8 @@ const canFork = computed(() => {
 })
 
 /**
- * Drops only the caller's `user_files` row for a shared file. The Delete
- * affordance stays reserved for the owner action (permanent delete for
+ * Drops only the caller's `user_files` row for a shared file. The Move to
+ * trash affordance stays reserved for the owner action (trashes it for
  * everyone), so recipients see a distinct Remove entry instead. The
  * follow-up confirm modal carries the disambiguating context ("X still
  * owns this file"), so the dropdown label can stay short.
@@ -190,7 +190,7 @@ const canDelete = computed(() => {
     v-if="canDelete"
     :icon="mdiTrashCan"
     @click="emits('remove', file)"
-    :label="$t('common.delete')"
+    :label="$t('files.delete.trashLabel')"
     name="delete"
     class="block text-left p-2 sm:p-0 w-full mt-1 pt-1 border-t border-paper-300 dark:border-brownish-600 text-redish-500 dark:text-redish-100 hover:bg-paper-100 dark:hover:bg-brownish-600"
   />

@@ -13,5 +13,6 @@ pub(crate) async fn resolve(context: &context::Context) -> Capabilities {
         // An operator switch rather than a probe: nothing about the bucket
         // decides it, only what the proxy in front of this server will carry.
         !context.config.app.tar_transfer_disabled,
+        settings.trash.retention_days(),
     )
 }
