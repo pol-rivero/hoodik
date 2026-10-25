@@ -2,6 +2,7 @@
 import CardBox from '@/components/ui/CardBox.vue'
 import StatsTable from '@/components/files/stats/StatsTable.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
+import ExpandableBox from '@/components/ui/ExpandableBox.vue'
 import { store as filesStore } from '!/storage'
 import { computedAsync } from '@vueuse/core'
 import { computed } from 'vue'
@@ -81,7 +82,12 @@ const usageTextColor = computed(() => {
         </div>
       </div>
       <div class="px-4 pb-4">
-        <StatsTable :data="data.stats" :max="data.quota" />
+        <ExpandableBox
+          :expand-label="$t('account.storage.showAll', { count: data.stats.length })"
+          :collapse-label="$t('account.storage.showLess')"
+        >
+          <StatsTable :data="data.stats" :max="data.quota" />
+        </ExpandableBox>
       </div>
     </div>
   </CardBox>

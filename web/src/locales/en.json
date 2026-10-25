@@ -127,6 +127,8 @@
     },
     "storage": {
       "byFileType": "By File Type",
+      "showAll": "Show all ({count})",
+      "showLess": "Show less",
       "title": "Storage Usage",
       "unlimited": "unlimited"
     },

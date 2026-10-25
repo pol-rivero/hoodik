@@ -127,6 +127,8 @@
     },
     "storage": {
       "byFileType": "Nach Dateityp",
+      "showAll": "Alle anzeigen ({count})",
+      "showLess": "Weniger anzeigen",
       "title": "Speichernutzung",
       "unlimited": "unbegrenzt"
     },

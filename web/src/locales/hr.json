@@ -127,6 +127,8 @@
     },
     "storage": {
       "byFileType": "Po vrsti datoteke",
+      "showAll": "Prikaži sve ({count})",
+      "showLess": "Prikaži manje",
       "title": "Iskorištenost pohrane",
       "unlimited": "neograničeno"
     },
