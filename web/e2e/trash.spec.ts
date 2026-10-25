@@ -111,8 +111,8 @@ test.describe('Trash', () => {
     await createFolder(page, 'Folder_A')
     await createFolder(page, 'Folder_B')
 
-    await page.getByTestId('file-row-Folder_A').locator('input[type="checkbox"]').check()
-    await page.getByTestId('file-row-Folder_B').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-Folder_A').click()
+    await page.getByTestId('file-row-Folder_B').click({ modifiers: ['ControlOrMeta'] })
     await page.keyboard.press('Delete')
     await page.getByRole('dialog').getByRole('button', { name: 'Move to trash' }).click()
     await expect(page.getByTestId('file-row-Folder_A')).toHaveCount(0)
@@ -155,7 +155,6 @@ test.describe('Trash', () => {
 
     const fileId = await page
       .getByTestId('file-row-test-image.png')
-      .locator('[data-row-nav]')
       .getAttribute('data-file-id')
     expect(fileId).toMatch(/[0-9a-f-]{36}/)
 

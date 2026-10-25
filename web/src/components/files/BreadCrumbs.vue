@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { AppFile } from 'types'
 import BaseButton from '../ui/BaseButton.vue'
+import FolderDropTarget from './FolderDropTarget.vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { activeDrag } from '!/storage/dragMove'
 
 const { t } = useI18n()
 
@@ -50,6 +52,29 @@ const visibleParents = computed<AppFile[]>(() => {
 
 const expanded = ref(false)
 
+/**
+ * Drop target of the root crumb: the account root (undefined) for owned
+ * content, the synthetic "Shared with me" folder (never a valid target)
+ * for incoming content.
+ */
+const SHARED_WITH_ME_TARGET = { id: SHARED_WITH_ME_DIR_ID, mime: 'dir' } as AppFile
+const rootTarget = computed<AppFile | undefined>(() =>
+  inSharedContent.value ? SHARED_WITH_ME_TARGET : undefined
+)
+
+/** Folder chain above `parent`, root-first, for drop validation. */
+function ancestorsOf(parent: AppFile): AppFile[] {
+  const index = props.parents.findIndex((p) => p.id === parent.id)
+  return index === -1 ? [] : props.parents.slice(0, index)
+}
+
+const DROP_OVER_CLASS = 'rounded-md bg-orangy-500/20 ring-2 ring-orangy-500'
+
+// Dragging over the collapsed "..." reveals the hidden crumbs as drop targets.
+const revealOnDrag = () => {
+  if (activeDrag.value) expanded.value = true
+}
+
 const skipIndexes = computed<number[]>(() => {
   if (expanded.value || visibleParents.value.length < 3) {
     return []
@@ -63,7 +88,7 @@ const skipIndexes = computed<number[]>(() => {
 <template>
   <nav :aria-label="$t('files.breadcrumbs')">
     <ol class="flex mb-2">
-      <li>
+      <FolderDropTarget as="li" :target="rootTarget" :ancestors="[]" :over-class="DROP_OVER_CLASS">
         <BaseButton
           :to="rootCrumb.to"
           :label="rootCrumb.label"
@@ -72,19 +97,27 @@ const skipIndexes = computed<number[]>(() => {
           class="pl-1 pr-1 text-lg"
           data-testid="breadcrumb-root"
         />
-      </li>
+      </FolderDropTarget>
 
       <template v-for="(parent, index) in visibleParents" v-bind:key="index">
         <li v-if="skipIndexes.indexOf(index) === -1">
           <span> / </span>
-          <BaseButton
-            :to="{ name: 'files', params: { file_id: parent.id } }"
-            :label="`${parent.name || '...'}`"
-            no-border
-            class="pl-1 pr-1 text-lg"
-          />
+          <FolderDropTarget
+            as="span"
+            class="inline-block"
+            :target="parent"
+            :ancestors="ancestorsOf(parent)"
+            :over-class="DROP_OVER_CLASS"
+          >
+            <BaseButton
+              :to="{ name: 'files', params: { file_id: parent.id } }"
+              :label="`${parent.name || '...'}`"
+              no-border
+              class="pl-1 pr-1 text-lg"
+            />
+          </FolderDropTarget>
         </li>
-        <li v-else-if="skipIndexes[0] === index">
+        <li v-else-if="skipIndexes[0] === index" @dragenter="revealOnDrag">
           <span> / </span>
           <BaseButton
             label="..."

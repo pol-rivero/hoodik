@@ -11,6 +11,9 @@ const props = defineProps<{
   memberLabels: string[]
   /** Re-wrap progress while a large subtree is being prepared, 0..1. */
   progress?: number | null
+  /** Prompt for this many plain files instead of one folder's cascade;
+   *  `folderName` is the file's name when there is one. */
+  fileCount?: number | null
 }>()
 
 const emits = defineEmits<{
@@ -33,6 +36,31 @@ const memberSummary = computed(() => {
   })
 })
 
+const title = computed(() =>
+  props.fileCount ? t('files.dragMove.shareFilesTitle') : t('files.moveShare.title')
+)
+
+const message = computed(() => {
+  if (props.fileCount) {
+    return t(
+      'files.dragMove.shareFilesMessage',
+      {
+        name: props.folderName,
+        count: props.fileCount,
+        destination: props.destinationName,
+        members: memberSummary.value
+      },
+      props.fileCount
+    )
+  }
+  return t('files.moveShare.message', {
+    folder: props.folderName,
+    destination: props.destinationName,
+    items: itemSummary.value,
+    members: memberSummary.value
+  })
+})
+
 const progressPercent = computed(() =>
   props.progress == null ? null : Math.round(props.progress * 100)
 )
@@ -40,7 +68,7 @@ const progressPercent = computed(() =>
 
 <template>
   <CardBoxModal
-    :title="$t('files.moveShare.title')"
+    :title="title"
     button="info"
     :model-value="props.modelValue"
     :button-label="$t('files.moveShare.confirmLabel')"
@@ -50,14 +78,7 @@ const progressPercent = computed(() =>
     @confirm="emits('confirm')"
   >
     <p data-testid="move-share-confirm-message">
-      {{
-        $t('files.moveShare.message', {
-          folder: folderName,
-          destination: destinationName,
-          items: itemSummary,
-          members: memberSummary
-        })
-      }}
+      {{ message }}
     </p>
 
     <div

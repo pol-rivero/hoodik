@@ -63,7 +63,7 @@ test.describe('Files toolbar: share icon', () => {
     await uploadImage(page)
 
     const row = page.getByTestId('file-row-test-image.png')
-    await row.locator('input[type="checkbox"]').check()
+    await row.click()
     await expect(page.getByTestId('bulk-sharing-button')).toBeVisible()
   })
 
@@ -75,7 +75,7 @@ test.describe('Files toolbar: share icon', () => {
     await expect(page.getByTestId('file-row-toolbar-folder')).toBeVisible({ timeout: 15_000 })
 
     const row = page.getByTestId('file-row-toolbar-folder')
-    await row.locator('input[type="checkbox"]').check()
+    await row.click()
     await expect(page.getByTestId('bulk-sharing-button')).toBeVisible()
   })
 })
@@ -169,7 +169,7 @@ test.describe('Outgoing share badge', () => {
 })
 
 test.describe('Synthetic Shared-with-me row', () => {
-  test('the synthetic row renders a disabled checkbox', async ({ page }) => {
+  test('the synthetic row cannot be selected', async ({ page }) => {
     // Set up two users so Bob has the Shared-with-me virtual folder.
     const alice = await createUser(page, randomEmail(), randomPassword())
     await logout(page)
@@ -195,6 +195,6 @@ test.describe('Synthetic Shared-with-me row', () => {
     await loginAsUser(page, bob.email, bob.password)
     const row = page.getByTestId('file-row-Shared with me')
     await expect(row).toBeVisible({ timeout: 15_000 })
-    await expect(row.locator('input[type="checkbox"]')).toHaveCount(0)
+    await expect(row).not.toHaveAttribute('aria-selected')
   })
 })

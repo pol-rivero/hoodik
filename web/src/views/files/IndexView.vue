@@ -6,6 +6,7 @@ import TableFiles from './index-view/TableFiles.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { computed, nextTick, watch } from 'vue'
 import { store as filesStore } from '!/storage'
+import type { AppFile } from 'types'
 
 const route = useRoute()
 const router = useRouter()
@@ -95,12 +96,12 @@ watch(
         :error="Storage.error"
         :sortOptions="Storage.sortOptions"
         :dir="Storage.dir || null"
-        :hide-checkbox="false"
         :hide-delete="false"
         :show-actions="true"
         :share="true"
         :loading="loading"
         v-on="on"
+        @set-selection="(files: AppFile[]) => Storage.selectAll(files)"
       />
     </SectionMain>
   </LayoutFileBrowser>

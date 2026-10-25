@@ -19,7 +19,7 @@ const treeState = reactive({
 </script>
 
 <script setup lang="ts">
-import { computed, ref, watch, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -34,11 +34,13 @@ import {
 import { isMarkdownFile } from '!/preview'
 import * as meta from '!/storage/meta'
 import { onFileTreeChange } from '!/storage/events'
+import { isInternalFileDrag } from '!/storage/dragMove'
 import * as sharesApi from '!/shares/api'
 import { SHARED_WITH_ME_DIR_ID, store as filesStore } from '!/storage'
 import type { KeyPair } from 'types'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import AsideFileTreeNode from '@/components/ui/AsideFileTreeNode.vue'
+import FolderDropTarget from '@/components/files/FolderDropTarget.vue'
 
 const props = defineProps<{
   keypair: KeyPair
@@ -51,6 +53,8 @@ const router = useRouter()
 const { t } = useI18n()
 
 const rootLoading = ref(false)
+
+const DROP_OVER_CLASS = '!bg-orangy-500/25 !text-white ring-1 ring-inset ring-orangy-400'
 
 const activeFileId = computed(() => {
   const id = route.params.id || route.params.file_id
@@ -85,7 +89,13 @@ async function fetchChildren(dirId?: string): Promise<AppFile[]> {
   return sortListing(items)
 }
 
+/**
+ * A fresh node has no children loaded, so it starts collapsed: an expanded
+ * flag left from a folder's old place (it was moved) would render it open
+ * and empty without ever fetching. Callers expand after creating nodes.
+ */
 function toNode(file: AppFile): TreeNode {
+  treeState.expanded.delete(file.id)
   return { file, children: [], loaded: false, loading: false }
 }
 
@@ -296,37 +306,48 @@ async function expandToFolder(folderId: string) {
   }
 }
 
-async function toggleFolder(node: TreeNode) {
+/** Expand a folder node, loading its children on first open. Never navigates. */
+async function expandFolder(node: TreeNode) {
   const id = node.file.id
+  treeState.expanded.add(id)
 
   if (id === SHARED_WITH_ME_DIR_ID) {
-    if (treeState.expanded.has(id)) {
-      treeState.expanded.delete(id)
-    } else {
-      treeState.expanded.add(id)
-      await loadSharedRoots()
-    }
-    router.push({ name: 'files', params: { file_id: id } })
+    await loadSharedRoots()
     return
   }
+
+  if (node.loaded || node.loading) return
+  node.loading = true
+  try {
+    const items = await fetchChildren(id)
+    node.children = items.map(toNode)
+    node.loaded = true
+  } finally {
+    node.loading = false
+  }
+}
+
+async function toggleFolder(node: TreeNode) {
+  const id = node.file.id
 
   if (treeState.expanded.has(id)) {
     treeState.expanded.delete(id)
   } else {
-    treeState.expanded.add(id)
-    if (!node.loaded) {
-      node.loading = true
-      try {
-        const items = await fetchChildren(id)
-        node.children = items.map(toNode)
-        node.loaded = true
-      } finally {
-        node.loading = false
-      }
-    }
+    await expandFolder(node)
   }
 
   router.push({ name: 'files', params: { file_id: id } })
+}
+
+/** Spring-loading: a drag hovering a collapsed folder opens it in place. */
+function springExpand(node: TreeNode) {
+  if (treeState.expanded.has(node.file.id)) return
+  expandFolder(node).catch((err) => console.error('Failed to expand folder in tree:', err))
+}
+
+/** Folder chain of a root-level node's children, for drop validation. */
+function childAncestors(node: TreeNode): AppFile[] {
+  return [node.file]
 }
 
 function onFileClick(file: AppFile) {
@@ -365,7 +386,13 @@ function mergeChildren(existing: TreeNode[], fresh: AppFile[]): TreeNode[] {
   const byId = new Map(existing.map((n) => [n.file.id, n]))
   return fresh.map((f) => {
     const prev = byId.get(f.id)
-    return prev ? { ...prev, file: f } : toNode(f)
+    if (prev) {
+      // Kept as the same object: a load in flight for it (a spring-open)
+      // finishes on this node instead of an orphaned copy stuck "loading".
+      prev.file = f
+      return prev
+    }
+    return toNode(f)
   })
 }
 
@@ -390,7 +417,10 @@ async function refreshFolder(folderId?: string) {
 const unsubscribe = onFileTreeChange(async (event) => {
   const folders = new Set<string | undefined>()
   folders.add(event.folderId)
-  if (event.targetFolderId !== undefined) folders.add(event.targetFolderId)
+  // A move into the root has no target id but still changes the root.
+  if (event.targetFolderId !== undefined || event.type === 'moved') {
+    folders.add(event.targetFolderId)
+  }
 
   for (const folderId of folders) {
     try {
@@ -402,6 +432,39 @@ const unsubscribe = onFileTreeChange(async (event) => {
 })
 
 onUnmounted(() => unsubscribe())
+
+const rootEl = ref<HTMLElement | null>(null)
+let scrollContainer: HTMLElement | null = null
+
+function findScrollContainer(el: HTMLElement | null): HTMLElement | null {
+  for (let node = el?.parentElement; node; node = node.parentElement) {
+    const overflow = getComputedStyle(node).overflowY
+    if (overflow === 'auto' || overflow === 'scroll') return node
+  }
+  return null
+}
+
+// The sidebar scrolls; a drag can't use the wheel, so hovering near its top or
+// bottom edge scrolls it (dragover keeps firing while the pointer rests).
+const EDGE = 48
+function autoScroll(event: DragEvent) {
+  if (!scrollContainer || !isInternalFileDrag(event)) return
+  const rect = scrollContainer.getBoundingClientRect()
+  const fromTop = event.clientY - rect.top
+  const fromBottom = rect.bottom - event.clientY
+  if (fromTop < EDGE) {
+    scrollContainer.scrollTop -= Math.ceil((EDGE - fromTop) / 3)
+  } else if (fromBottom < EDGE) {
+    scrollContainer.scrollTop += Math.ceil((EDGE - fromBottom) / 3)
+  }
+}
+
+onMounted(() => {
+  scrollContainer = findScrollContainer(rootEl.value)
+  // Capture: valid drop targets stop the dragover from bubbling.
+  scrollContainer?.addEventListener('dragover', autoScroll, true)
+})
+onUnmounted(() => scrollContainer?.removeEventListener('dragover', autoScroll, true))
 
 watch(
   () => props.keypair,
@@ -415,14 +478,18 @@ watch(
 </script>
 
 <template>
-  <div class="text-xs ml-6 mr-2 my-1 rounded-lg bg-brownish-800/40 overflow-hidden">
+  <div ref="rootEl" class="text-xs ml-6 mr-2 my-1 rounded-lg bg-brownish-800/40 overflow-hidden">
     <div v-if="rootLoading" class="flex items-center justify-center py-4 text-brownish-50">
       {{ $t('common.loading') }}
     </div>
     <ul v-else class="flex flex-col py-0.5">
       <template v-for="node in treeState.rootNodes" :key="node.file.id">
-        <li
+        <FolderDropTarget
           v-if="node.file.id === SHARED_WITH_ME_DIR_ID"
+          as="li"
+          :target="node.file"
+          :ancestors="[]"
+          spring-load
           :title="node.file.name"
           class="flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors duration-150"
           :class="
@@ -432,6 +499,7 @@ watch(
           "
           data-testid="aside-tree-shared-with-me"
           @click="toggleFolder(node)"
+          @spring-load="springExpand(node)"
         >
           <BaseIcon
             :path="treeState.expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
@@ -440,10 +508,15 @@ watch(
           />
           <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
           <span class="truncate">{{ node.file.name }}</span>
-        </li>
+        </FolderDropTarget>
 
-        <li
+        <FolderDropTarget
           v-else-if="node.file.mime === 'dir'"
+          as="li"
+          :target="node.file"
+          :ancestors="[]"
+          :over-class="DROP_OVER_CLASS"
+          spring-load
           :title="node.file.name"
           class="flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors duration-150"
           :class="
@@ -452,6 +525,7 @@ watch(
               : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
           "
           @click="toggleFolder(node)"
+          @spring-load="springExpand(node)"
         >
           <BaseIcon
             :path="treeState.expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
@@ -460,7 +534,7 @@ watch(
           />
           <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
           <span class="truncate">{{ node.file.name }}</span>
-        </li>
+        </FolderDropTarget>
 
         <template v-if="node.file.mime === 'dir' && treeState.expanded.has(node.file.id)">
           <li v-if="node.loading" class="py-1 text-brownish-50" style="padding-left: 24px">
@@ -472,11 +546,12 @@ watch(
               :key="child.file.id"
               :node="child"
               :depth="1"
+              :ancestors="childAncestors(node)"
               :expanded="treeState.expanded"
               :active-file-id="activeFileId"
               :active-folder-id="activeFolderId"
-              :keypair="keypair"
               @toggle-folder="toggleFolder"
+              @expand-folder="springExpand"
               @file-click="onFileClick"
             />
             <li

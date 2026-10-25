@@ -330,9 +330,9 @@ test.describe('Download', () => {
     await setup(page)
     await createFolderWithImage(page, 'Photos')
 
-    await page.getByTestId('file-row-Photos').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-Photos').click()
     await expect(page.getByTitle('Add to download queue')).toBeVisible()
-    await page.getByTestId('file-row-Photos').locator('input[type="checkbox"]').uncheck()
+    await page.getByTestId('file-row-Photos').click({ modifiers: ['ControlOrMeta'] })
 
     await page.getByTestId('file-row-Photos').locator('[name="actions-dropdown"]').click()
 
@@ -353,8 +353,8 @@ test.describe('Download', () => {
     await createFolderWithImage(page, 'Photos')
     await createFolderWithImage(page, 'Scans')
 
-    await page.getByTestId('file-row-Photos').locator('input[type="checkbox"]').check()
-    await page.getByTestId('file-row-Scans').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-Photos').click()
+    await page.getByTestId('file-row-Scans').click({ modifiers: ['ControlOrMeta'] })
 
     const [download] = await Promise.all([
       page.waitForEvent('download', { timeout: 60_000 }),
@@ -465,16 +465,16 @@ test.describe('Selection counter', () => {
     const counter = page.getByTestId('files-selected-count')
     await expect(counter).toHaveCount(0)
 
-    await page.getByTestId('file-row-Folder_A').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-Folder_A').click()
     await expect(counter).toHaveText(/^1 selected$/)
 
-    await page.getByTestId('file-row-Folder_B').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-Folder_B').click({ modifiers: ['ControlOrMeta'] })
     await expect(counter).toHaveText(/^2 selected$/)
 
-    await page.getByTestId('file-row-Folder_A').locator('input[type="checkbox"]').uncheck()
+    await page.getByTestId('file-row-Folder_A').click({ modifiers: ['ControlOrMeta'] })
     await expect(counter).toHaveText(/^1 selected$/)
 
-    await page.getByTestId('file-row-Folder_B').locator('input[type="checkbox"]').uncheck()
+    await page.getByTestId('file-row-Folder_B').click({ modifiers: ['ControlOrMeta'] })
     await expect(counter).toHaveCount(0)
   })
 })
@@ -495,9 +495,9 @@ test.describe('Delete', () => {
     await expect(page.getByTestId('file-row-test-image.png')).not.toBeVisible()
   })
 
-  // Ticking a checkbox leaves focus on it, which must not swallow the shortcut
+  // Clicking a row leaves focus on it, which must not swallow the shortcut
   for (const key of ['Delete', 'ControlOrMeta+Backspace']) {
-    test(`${key} deletes the rows just ticked with their checkboxes`, async ({ page }) => {
+    test(`${key} deletes the rows just selected by clicking`, async ({ page }) => {
       await setup(page)
 
       for (const name of ['Folder_A', 'Folder_B']) {
@@ -507,8 +507,8 @@ test.describe('Delete', () => {
         await expect(page.getByTestId(`file-row-${name}`)).toBeVisible()
       }
 
-      await page.getByTestId('file-row-Folder_A').locator('input[type="checkbox"]').check()
-      await page.getByTestId('file-row-Folder_B').locator('input[type="checkbox"]').check()
+      await page.getByTestId('file-row-Folder_A').click()
+      await page.getByTestId('file-row-Folder_B').click({ modifiers: ['ControlOrMeta'] })
       await page.keyboard.press(key)
 
       await page.getByRole('dialog', { name: 'Move to trash' }).getByRole('button', { name: 'Move to trash' }).click()
@@ -517,4 +517,388 @@ test.describe('Delete', () => {
       await expect(page.getByTestId('file-row-Folder_B')).not.toBeVisible()
     })
   }
+})
+
+test.describe('Selection', () => {
+  type Page = Parameters<typeof createUser>[0]
+
+  async function createFolders(page: Page, names: string[]) {
+    for (const name of names) {
+      await page.locator('[name="create-dir"]').click()
+      await page.locator('#name').fill(name)
+      await page.getByRole('button', { name: 'Create', exact: true }).click()
+      await expect(page.getByTestId(`file-row-${name}`)).toBeVisible()
+    }
+  }
+
+  /** Row names as listed, top to bottom. */
+  const rowOrder = (page: Page) =>
+    page
+      .getByRole('grid')
+      .locator('[data-file-id]')
+      .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-testid')!.slice('file-row-'.length)))
+
+  const selectedNames = (page: Page) =>
+    page
+      .getByRole('grid')
+      .locator('[aria-selected="true"]')
+      .evaluateAll((rows) => rows.map((row) => row.getAttribute('data-testid')!.slice('file-row-'.length)))
+
+  const expectSelected = (page: Page, names: string[]) =>
+    expect.poll(() => selectedNames(page)).toEqual(names)
+
+  const row = (page: Page, name: string) => page.getByTestId(`file-row-${name}`)
+
+  const center = async (page: Page, name: string) => {
+    const box = (await row(page, name).boundingBox())!
+    return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  }
+
+  /** A point in the empty page area under the listing. */
+  const belowTable = async (page: Page) => {
+    const box = (await page.getByRole('grid').boundingBox())!
+    return { x: box.x + box.width / 2, y: box.y + box.height + 40 }
+  }
+
+  test('rows have no checkboxes and the list is a multi-select grid', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+
+    const grid = page.getByRole('grid')
+    await expect(grid).toHaveAttribute('aria-multiselectable', 'true')
+    await expect(grid.getByRole('columnheader')).toHaveCount(5)
+    await expect(grid.getByRole('columnheader', { name: 'Name' })).toHaveAttribute(
+      'aria-sort',
+      'ascending'
+    )
+    await expect(grid.locator('input[type="checkbox"]')).toHaveCount(0)
+    await expect(page.locator('[data-table-header] input[type="checkbox"]')).toHaveCount(0)
+    await expect(row(page, 'Folder_A')).toHaveAttribute('aria-selected', 'false')
+  })
+
+  test('a selected row is highlighted, also while hovered', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+
+    const background = (name: string) =>
+      row(page, name).evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    await row(page, 'Folder_A').click()
+    await expect(row(page, 'Folder_A')).toHaveAttribute('aria-selected', 'true')
+
+    await page.mouse.move(0, 0)
+    const idle = await background('Folder_B')
+    const selected = await background('Folder_A')
+    expect(selected).not.toBe(idle)
+
+    await row(page, 'Folder_B').hover()
+    const hovered = await background('Folder_B')
+    await row(page, 'Folder_A').hover()
+    const selectedHovered = await background('Folder_A')
+    expect(selectedHovered).not.toBe(hovered)
+    expect(selectedHovered).not.toBe(idle)
+  })
+
+  test('click, Ctrl+click and Shift+click follow file manager rules', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C', 'Folder_D'])
+    const [a, b, c, d] = await rowOrder(page)
+
+    await row(page, a).click()
+    await expectSelected(page, [a])
+
+    // A plain click replaces, and clicking the only selected row keeps it.
+    await row(page, b).click()
+    await expectSelected(page, [b])
+    await row(page, b).click()
+    await expectSelected(page, [b])
+
+    await row(page, d).click({ modifiers: ['ControlOrMeta'] })
+    await expectSelected(page, [b, d])
+    await row(page, d).click({ modifiers: ['ControlOrMeta'] })
+    await expectSelected(page, [b])
+
+    // Ctrl+click moved the anchor; a plain click puts it back on b.
+    await row(page, b).click()
+    await row(page, d).click({ modifiers: ['Shift'] })
+    await expectSelected(page, [b, c, d])
+    // Shift+click leaves the anchor where it was, so the range flips around it.
+    await row(page, a).click({ modifiers: ['Shift'] })
+    await expectSelected(page, [a, b])
+
+    await row(page, d).click({ modifiers: ['ControlOrMeta'] })
+    await expectSelected(page, [a, b, d])
+    await row(page, c).click({ modifiers: ['ControlOrMeta', 'Shift'] })
+    await expectSelected(page, [a, b, c, d])
+
+    // A plain click on a row inside a multi-selection collapses onto it.
+    await row(page, c).click()
+    await expectSelected(page, [c])
+    await expect(page.getByTestId('files-selected-count')).toHaveText(/^1 selected$/)
+  })
+
+  test('clicking blank space clears the selection, the toolbar does not', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+
+    await row(page, 'Folder_A').click()
+    await row(page, 'Folder_B').click({ modifiers: ['ControlOrMeta'] })
+    await expectSelected(page, ['Folder_A', 'Folder_B'])
+
+    await page.getByTestId('files-selected-count').click()
+    await expectSelected(page, ['Folder_A', 'Folder_B'])
+
+    const blank = await belowTable(page)
+    await page.mouse.click(blank.x, blank.y)
+    await expectSelected(page, [])
+    await expect(page.getByTestId('files-selected-count')).toHaveCount(0)
+  })
+
+  test('Escape clears the selection, but only once a dialog is out of the way', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+
+    await row(page, 'Folder_A').click()
+    await page.getByTitle('Rename file or folder').click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+    await expectSelected(page, ['Folder_A'])
+
+    await page.keyboard.press('Escape')
+    await expectSelected(page, [])
+  })
+
+  test('Escape that closes a menu or the transfers panel keeps the selection', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+
+    await row(page, 'Folder_A').click()
+
+    await row(page, 'Folder_B').locator('[name="actions-dropdown"]').click()
+    const menu = row(page, 'Folder_B').locator('.floating-menu')
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+    await expectSelected(page, ['Folder_A'])
+
+    await page.getByText('Transfers', { exact: true }).click()
+    const panel = page.getByText('No activity in progress')
+    await expect(panel).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(panel).toBeHidden()
+    await expectSelected(page, ['Folder_A'])
+
+    await page.keyboard.press('Escape')
+    await expectSelected(page, [])
+  })
+
+  test('Enter opens the focused folder and Space selects it', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B'])
+    const [first, second] = await rowOrder(page)
+
+    await row(page, first).click()
+    await page.keyboard.press('ArrowDown')
+    await page.keyboard.press('Space')
+    await expectSelected(page, [second])
+
+    await page.keyboard.press('Shift+ArrowUp')
+    await expectSelected(page, [first, second])
+
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/[0-9a-f-]{36}/)
+  })
+
+  test('dragging from blank space rubber-band selects the rows it crosses', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C', 'Folder_D'])
+    const [, b, c, d] = await rowOrder(page)
+    const marquee = page.getByTestId('selection-marquee')
+
+    const start = await belowTable(page)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x, start.y - 2)
+    // Under the drag threshold nothing happens yet.
+    await expect(marquee).toHaveCount(0)
+
+    const target = await center(page, b)
+    await page.mouse.move(target.x - 100, target.y, { steps: 8 })
+    await expect(marquee).toBeVisible()
+    await expectSelected(page, [b, c, d])
+
+    await page.mouse.up()
+    await expect(marquee).toHaveCount(0)
+    // The click that ends the drag must not reset what the band selected.
+    await expectSelected(page, [b, c, d])
+
+    // Ctrl toggles against the selection the drag started from.
+    await page.keyboard.down('ControlOrMeta')
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    const third = await center(page, c)
+    await page.mouse.move(third.x, third.y, { steps: 8 })
+    await expectSelected(page, [b])
+    await page.mouse.up()
+    await page.keyboard.up('ControlOrMeta')
+    await expectSelected(page, [b])
+
+    // Shift adds to it (from blank space; Shift on a row is a range click).
+    await page.keyboard.down('Shift')
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(third.x, third.y, { steps: 8 })
+    await expectSelected(page, [b, c, d])
+    await page.mouse.up()
+    await page.keyboard.up('Shift')
+    await expectSelected(page, [b, c, d])
+  })
+
+  test('a drag starting on an unselected row selects, one on a selected row does not', async ({
+    page
+  }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C'])
+    const [a, b, c] = await rowOrder(page)
+    const marquee = page.getByTestId('selection-marquee')
+
+    await row(page, c).click()
+
+    const from = await center(page, a)
+    const to = await center(page, b)
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(to.x, to.y, { steps: 6 })
+    await expect(marquee).toBeVisible()
+    await expectSelected(page, [a, b])
+    await page.mouse.up()
+    await expectSelected(page, [a, b])
+
+    // A press on a selected row is left to the drag-and-drop of the selection
+    // (released on a, itself part of the selection, it moves nothing).
+    const onSelected = await center(page, b)
+    await page.mouse.move(onSelected.x, onSelected.y)
+    await page.mouse.down()
+    await page.mouse.move(onSelected.x, onSelected.y - 30, { steps: 6 })
+    await expect(marquee).toHaveCount(0)
+    await page.mouse.up()
+    await expectSelected(page, [a, b])
+  })
+
+  test('a press on one row released on another leaves the selection alone', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C'])
+    const [a, b] = await rowOrder(page)
+
+    await row(page, a).click()
+    await row(page, b).click({ modifiers: ['ControlOrMeta'] })
+
+    // From the selected b onto the selected a: a drag of the selection that
+    // a refuses (it is part of it), so no band and nothing moves; and the
+    // release on their common ancestor isn't a click on blank space.
+    const from = await center(page, b)
+    const to = await center(page, a)
+    await page.mouse.move(from.x, from.y)
+    await page.mouse.down()
+    await page.mouse.move(to.x, to.y, { steps: 6 })
+    await page.mouse.up()
+    await expectSelected(page, [a, b])
+  })
+
+  test('a shaky Shift+click on a row selects a range, not a band', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C'])
+    const [a, b, c] = await rowOrder(page)
+
+    await row(page, a).click()
+    const at = await center(page, c)
+    await page.keyboard.down('Shift')
+    await page.mouse.move(at.x, at.y)
+    await page.mouse.down()
+    await page.mouse.move(at.x + 4, at.y + 3, { steps: 3 })
+    await expect(page.getByTestId('selection-marquee')).toHaveCount(0)
+    await page.mouse.up()
+    await page.keyboard.up('Shift')
+    await expectSelected(page, [a, b, c])
+  })
+
+  test('Shift+click after a band extends from where the band began', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C', 'Folder_D'])
+    const [a, b, c, d] = await rowOrder(page)
+
+    await row(page, a).click()
+
+    const start = await belowTable(page)
+    const third = await center(page, c)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(third.x, third.y, { steps: 8 })
+    await page.mouse.up()
+    await expectSelected(page, [c, d])
+
+    await row(page, b).click({ modifiers: ['Shift'] })
+    await expectSelected(page, [b, c, d])
+  })
+
+  test('create and upload stay in the toolbar while rows are selected', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A'])
+
+    await row(page, 'Folder_A').click()
+    await expect(page.getByTestId('files-selected-count')).toBeVisible()
+    for (const name of ['create-dir', 'create-file', 'browse', 'browse-folder']) {
+      await expect(page.locator(`[name="${name}"]`)).toBeVisible()
+    }
+  })
+
+  test('Escape during a drag restores the selection it started from', async ({ page }) => {
+    await setup(page)
+    await createFolders(page, ['Folder_A', 'Folder_B', 'Folder_C'])
+    const [a, b, c] = await rowOrder(page)
+    const marquee = page.getByTestId('selection-marquee')
+
+    await row(page, c).click()
+
+    const start = await belowTable(page)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    const top = await center(page, a)
+    await page.mouse.move(top.x, top.y, { steps: 8 })
+    await expectSelected(page, [a, b, c])
+
+    await page.keyboard.press('Escape')
+    await expect(marquee).toHaveCount(0)
+    await expectSelected(page, [c])
+
+    await page.mouse.up()
+    await expectSelected(page, [c])
+  })
+
+  test('the band auto-scrolls and stays anchored while the page scrolls', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 380 })
+    await setup(page)
+    const names = ['Folder_1', 'Folder_2', 'Folder_3', 'Folder_4', 'Folder_5', 'Folder_6']
+    await createFolders(page, names)
+    const order = await rowOrder(page)
+    const last = order[order.length - 1]
+
+    await row(page, last).scrollIntoViewIfNeeded()
+    await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }))
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    const start = await center(page, last)
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    // Into the auto-scroll zone just under the navbar, then hold still.
+    await page.mouse.move(start.x, 70, { steps: 10 })
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 10_000 }).toBe(0)
+
+    await expectSelected(page, order)
+    await page.mouse.up()
+    await expectSelected(page, order)
+  })
 })

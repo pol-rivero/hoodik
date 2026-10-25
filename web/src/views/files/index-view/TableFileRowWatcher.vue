@@ -6,13 +6,13 @@ import { ref, onMounted, onUnmounted } from 'vue'
 
 const props = defineProps<{
   file: AppFile
-  checkedIds: Set<string>
+  selected: boolean
   hideDelete?: boolean
   share?: boolean
-  hideCheckbox?: boolean
+  selectionDisabled?: boolean
   highlighted?: boolean
+  ancestors?: readonly AppFile[]
   sizes: {
-    checkbox: string
     name: string
     size: string
     type: string
@@ -23,7 +23,6 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   (event: 'actions', file: AppFile): void
-  (event: 'deselect-all'): void
   (event: 'details', file: AppFile): void
   (event: 'download', file: AppFile): void
   (event: 'sharing', file: AppFile): void
@@ -31,8 +30,7 @@ const emits = defineEmits<{
   (event: 'rename', file: AppFile): void
   (event: 'fork', file: AppFile): void
   (event: 'leave', file: AppFile): void
-  (event: 'select-one', value: boolean, file: AppFile): void
-  (event: 'select-range', file: AppFile): void
+  (event: 'row-click', origin: MouseEvent | KeyboardEvent, file: AppFile): void
   (event: 'upload-many', files: FileList, dirId?: string): void
 }>()
 
@@ -66,7 +64,9 @@ onUnmounted(() => {
       :class="{
         '!border !border-greeny-300 dark:!border-greeny-700': props.highlighted
       }"
-      class="w-full flex pl-11 pt-3.5 pb-3.5 bg-paper-50 dark:bg-brownish-900"
+      class="w-full flex pl-3 pt-3.5 pb-3.5 bg-paper-50 dark:bg-brownish-900"
+      :data-row-placeholder="props.file.id"
+      aria-hidden="true"
       v-if="!visible"
     >
       <div class="flex items-start">
@@ -77,14 +77,14 @@ onUnmounted(() => {
     <TableFileRow
       v-else
       :file="props.file"
-      :checked-ids="props.checkedIds"
+      :selected="props.selected"
       :hide-delete="props.hideDelete"
       :share="props.share"
-      :hide-checkbox="props.hideCheckbox"
+      :selection-disabled="props.selectionDisabled"
       :sizes="props.sizes"
       :highlighted="props.highlighted"
+      :ancestors="props.ancestors"
       @actions="(f: AppFile) => emits('actions', f)"
-      @deselect-all="() => emits('deselect-all')"
       @details="(f: AppFile) => emits('details', f)"
       @download="(f: AppFile) => emits('download', f)"
       @remove="(f: AppFile) => emits('remove', f)"
@@ -92,10 +92,9 @@ onUnmounted(() => {
       @sharing="(f: AppFile) => emits('sharing', f)"
       @fork="(f: AppFile) => emits('fork', f)"
       @leave="(f: AppFile) => emits('leave', f)"
-      @select-one="(v: boolean, f: AppFile) => emits('select-one', v, f)"
-      @select-range="(f: AppFile) => emits('select-range', f)"
+      @row-click="(e: MouseEvent | KeyboardEvent, f: AppFile) => emits('row-click', e, f)"
       @upload-many="(f: FileList, d?: string) => emits('upload-many', f, d)"
     />
   </Suspense>
-  <div ref="referenceObject" :id="props.file.id"></div>
+  <div ref="referenceObject" :id="props.file.id" aria-hidden="true"></div>
 </template>

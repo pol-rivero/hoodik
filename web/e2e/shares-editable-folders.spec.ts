@@ -511,12 +511,12 @@ async function createFolderNamed(
   await expect(page.getByTestId(`file-row-${name}`)).toBeVisible({ timeout: 15_000 })
 }
 
-/** Tick a file row's selection checkbox. */
+/** Select a single file row. */
 async function selectRow(
   page: Parameters<typeof createUser>[0],
   rowName: string
 ): Promise<void> {
-  await page.getByTestId(`file-row-${rowName}`).locator('input[type="checkbox"]').check()
+  await page.getByTestId(`file-row-${rowName}`).click()
 }
 
 /**

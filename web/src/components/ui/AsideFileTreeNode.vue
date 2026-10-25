@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { mdiFolder, mdiFolderOpen, mdiFileDocumentOutline, mdiFileOutline, mdiChevronRight, mdiChevronDown } from '@mdi/js'
 import { isMarkdownFile } from '!/preview'
-import * as meta from '!/storage/meta'
-import type { KeyPair, AppFile } from 'types'
+import type { AppFile } from 'types'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
+import FolderDropTarget from '@/components/files/FolderDropTarget.vue'
 
 interface TreeNode {
   file: AppFile
@@ -15,18 +16,26 @@ interface TreeNode {
 const props = defineProps<{
   node: TreeNode
   depth: number
+  /** Folder chain above this node, root-first. */
+  ancestors: readonly AppFile[]
   expanded: Set<string>
   activeFileId?: string
   activeFolderId?: string
-  keypair: KeyPair
 }>()
 
 const emit = defineEmits<{
+  /** Click: expand/collapse (loading children) and navigate. */
   'toggle-folder': [node: TreeNode]
+  /** Drag spring-loading: expand without navigating. */
+  'expand-folder': [node: TreeNode]
   'file-click': [file: AppFile]
 }>()
 
+const DROP_OVER_CLASS = '!bg-orangy-500/25 !text-white ring-1 ring-inset ring-orangy-400'
+
 const padLeft = `padding-left: ${props.depth * 16 + 8}px`
+
+const childAncestors = computed(() => [...props.ancestors, props.node.file])
 
 function iconFor(file: AppFile): string {
   if (file.mime === 'dir') {
@@ -36,36 +45,19 @@ function iconFor(file: AppFile): string {
   return mdiFileOutline
 }
 
-async function fetchAndExpand(node: TreeNode) {
-  if (!node.loaded) {
-    node.loading = true
-    const response = await meta.find({ dir_id: node.file.id })
-    const privateKey = props.keypair.wrappingPrivate || (props.keypair.input as string)
-
-    const items: AppFile[] = []
-    for (const item of response.children) {
-      const decrypted = await meta.decrypt(item, privateKey)
-      items.push({ ...item, ...decrypted } as AppFile)
-    }
-
-    items.sort((a, b) => {
-      if (a.mime === 'dir' && b.mime !== 'dir') return -1
-      if (a.mime !== 'dir' && b.mime === 'dir') return 1
-      return (a.name || '').localeCompare(b.name || '')
-    })
-
-    node.children = items.map((f) => ({ file: f, children: [], loaded: false, loading: false }))
-    node.loaded = true
-    node.loading = false
-  }
-
-  emit('toggle-folder', node)
+function springExpand() {
+  if (!props.expanded.has(props.node.file.id)) emit('expand-folder', props.node)
 }
 </script>
 
 <template>
-  <li
+  <FolderDropTarget
     v-if="node.file.mime === 'dir'"
+    as="li"
+    :target="node.file"
+    :ancestors="ancestors"
+    :over-class="DROP_OVER_CLASS"
+    spring-load
     :title="node.file.name"
     class="flex items-center gap-1 py-1 cursor-pointer transition-colors duration-150"
     :class="
@@ -74,7 +66,8 @@ async function fetchAndExpand(node: TreeNode) {
         : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
     "
     :style="padLeft"
-    @click="fetchAndExpand(node)"
+    @click="emit('toggle-folder', node)"
+    @spring-load="springExpand"
   >
     <BaseIcon
       :path="expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
@@ -83,7 +76,7 @@ async function fetchAndExpand(node: TreeNode) {
     />
     <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
     <span class="truncate">{{ node.file.name }}</span>
-  </li>
+  </FolderDropTarget>
 
   <template v-if="node.file.mime === 'dir' && expanded.has(node.file.id)">
     <li v-if="node.loading" class="py-1 text-brownish-50" :style="`padding-left: ${(depth + 1) * 16 + 24}px`">
@@ -95,11 +88,12 @@ async function fetchAndExpand(node: TreeNode) {
         :key="child.file.id"
         :node="child"
         :depth="depth + 1"
+        :ancestors="childAncestors"
         :expanded="expanded"
         :active-file-id="activeFileId"
         :active-folder-id="activeFolderId"
-        :keypair="keypair"
         @toggle-folder="(n: TreeNode) => emit('toggle-folder', n)"
+        @expand-folder="(n: TreeNode) => emit('expand-folder', n)"
         @file-click="(f: AppFile) => emit('file-click', f)"
       />
       <li

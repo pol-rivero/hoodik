@@ -2,7 +2,6 @@
 import ActionsDropdown from '@/components/files/browser/ActionsDropdown.vue'
 import FileThumbnail from '@/components/files/FileThumbnail.vue'
 import FileIconTile from '@/components/files/FileIconTile.vue'
-import TableCheckboxCell from '@/components/ui/TableCheckboxCell.vue'
 import TruncatedSpan from '@/components/ui/TruncatedSpan.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
@@ -21,7 +20,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { isPreviewable, isMarkdownFile } from '!/preview'
 import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { activeDrag, isInternalFileDrag } from '!/storage/dragMove'
 import { store as uploadStore } from '!/storage/upload'
+import { useFolderDropTarget } from '@/composables/useFolderDropTarget'
 import { prettyMime } from '@/utils/mime'
 
 const router = useRouter()
@@ -31,13 +32,14 @@ const isDropZone = ref(false)
 
 const props = defineProps<{
   file: AppFile
-  checkedIds: Set<string>
+  selected: boolean
   hideDelete?: boolean
   share?: boolean
-  hideCheckbox?: boolean
+  selectionDisabled?: boolean
   highlighted?: boolean
+  /** The current folder's chain, root-first and ending with the current folder. */
+  ancestors?: readonly AppFile[]
   sizes: {
-    checkbox: string
     name: string
     size: string
     type: string
@@ -48,7 +50,6 @@ const props = defineProps<{
 
 const emits = defineEmits<{
   (event: 'actions', file: AppFile): void
-  (event: 'deselect-all'): void
   (event: 'details', file: AppFile): void
   (event: 'download', file: AppFile): void
   (event: 'sharing', file: AppFile): void
@@ -56,19 +57,10 @@ const emits = defineEmits<{
   (event: 'rename', file: AppFile): void
   (event: 'fork', file: AppFile): void
   (event: 'leave', file: AppFile): void
-  (event: 'select-one', value: boolean, file: AppFile): void
-  (event: 'select-range', file: AppFile): void
+  (event: 'row-click', origin: MouseEvent | KeyboardEvent, file: AppFile): void
   (event: 'upload-many', files: FileList, dirId?: string): void
 }>()
 
-const selectOne = (value: boolean) => {
-  emits('select-one', value, props.file)
-}
-
-const checked = computed({
-  get: () => props.checkedIds.has(props.file.id),
-  set: (v) => selectOne(v)
-})
 
 const upload = uploadStore()
 
@@ -129,7 +121,11 @@ const progressValue = computed(() => {
   return Math.ceil(progress * 100)
 })
 
-const sharedClass = computed(() => {
+// Selection keeps its own hover shade so a hovered selected row still reads as selected.
+const rowClass = computed(() => {
+  if (props.selected) {
+    return 'file-row-selected bg-orangy-500/20 hover:bg-orangy-500/30 dark:bg-orangy-500/15 dark:hover:bg-orangy-500/25'
+  }
   return 'dark:bg-brownish-900 hover:bg-paper-100 hover:dark:bg-brownish-700'
 })
 
@@ -169,10 +165,17 @@ const sharedOutTitle = computed(() =>
  */
 const isSyntheticRoot = computed(() => props.file.id === SHARED_WITH_ME_DIR_ID)
 
+const isSelectable = computed(() => !props.selectionDisabled && !isSyntheticRoot.value)
+
+// Only a selected row drags, and it carries the whole selection with it; a
+// press on an unselected row starts the rubber band instead.
+const isDraggable = computed(() => props.selected && isSelectable.value)
+
+const isBeingMoved = computed(() => !!activeDrag.value?.ids.has(props.file.id))
+
 const border = 'sm:border-l sm:border-paper-300 sm:dark:border-brownish-950'
 const sizes = computed(() => {
   return {
-    checkbox: `${props.sizes.checkbox}`,
     name: `${props.sizes.name}`,
     size: `${border} ${props.sizes.size}`,
     type: `${border} ${props.sizes.type}`,
@@ -181,24 +184,34 @@ const sizes = computed(() => {
   }
 })
 
+const navButton = ref<HTMLButtonElement | null>(null)
+
+// The ⋮ button and its dropdown live inside the row, but their clicks are theirs.
+const fromActions = (event: Event) =>
+  !!(event.target as Element | null)?.closest('[data-row-actions]')
+
+/**
+ * What a click means for the selection is decided by the table, which knows
+ * the anchor and the rest of the list. Clicking anywhere on the row also
+ * focuses it, so the arrow keys carry on from there.
+ */
+const click = (event: MouseEvent) => {
+  if (fromActions(event)) return
+  if (document.activeElement !== navButton.value) navButton.value?.focus({ preventScroll: true })
+  emits('row-click', event, props.file)
+}
+
 /**
  * The browser already knows what a double click is, and it knows it at the
  * speed the reader configured. This used to be a hand-rolled 250ms counter,
  * which made diving into folders feel like it was thinking about it.
  */
-const click = (event: MouseEvent) => {
-  if (event.shiftKey) {
-    emits('select-range', props.file)
-    return
-  }
-  if (event.ctrlKey || event.metaKey) {
-    toggleOne()
-    return
-  }
-  singleClick()
+const doubleClick = (event: MouseEvent) => {
+  if (fromActions(event)) return
+  open()
 }
 
-const doubleClick = () => {
+const open = () => {
   if (isDir.value) {
     router.push({ name: 'files', params: { file_id: props.file.id } })
   } else {
@@ -227,19 +240,37 @@ const detailsOrPreview = () => {
   }
 }
 
-const singleClick = () => {
-  if (isSyntheticRoot.value) return
-  const onlyThisSelected = checked.value && props.checkedIds.size === 1
-  emits('deselect-all')
-  if (!onlyThisSelected) selectOne(true)
+/**
+ * Folder rows take the selection dragged from another row. Hovering one for a
+ * moment opens it, so the items can be carried further down, like Finder's
+ * spring-loaded folders.
+ */
+const moveTarget = useFolderDropTarget(
+  () => props.file,
+  () => props.ancestors ?? [],
+  {
+    disabled: () => !isDir.value,
+    onSpringLoad: () => router.push({ name: 'files', params: { file_id: props.file.id } })
+  }
+)
+const isMoveTarget = moveTarget.isOver
+
+// The upload handlers below are for files dragged in from the OS; a drag of
+// the user's own rows goes to `moveTarget`, or bubbles up from a file row to
+// the listing's own drop target.
+const dragenter = (e: DragEvent) => {
+  if (isInternalFileDrag(e)) {
+    if (isDir.value) moveTarget.onDragenter(e)
+    return
+  }
+  dragover(e)
 }
 
-const toggleOne = () => {
-  if (isSyntheticRoot.value) return
-  selectOne(!checked.value)
-}
-
-const dragend = (e: DragEvent) => {
+const dragleave = (e: DragEvent) => {
+  if (isInternalFileDrag(e)) {
+    if (isDir.value) moveTarget.onDragleave(e)
+    return
+  }
   if (props.file.mime !== 'dir') {
     return
   }
@@ -251,6 +282,10 @@ const dragend = (e: DragEvent) => {
 }
 
 const dragover = (e: DragEvent) => {
+  if (isInternalFileDrag(e)) {
+    if (isDir.value) moveTarget.onDragover(e)
+    return
+  }
   if (props.file.mime !== 'dir') {
     return
   }
@@ -262,6 +297,10 @@ const dragover = (e: DragEvent) => {
 }
 
 const drop = (e: DragEvent) => {
+  if (isInternalFileDrag(e)) {
+    if (isDir.value) moveTarget.onDrop(e)
+    return
+  }
   if (props.file.mime !== 'dir') {
     return
   }
@@ -283,104 +322,108 @@ const drop = (e: DragEvent) => {
 
 <template>
   <div
-    @dragenter="dragover"
-    @dragleave="dragend"
-    @dragend="dragend"
+    @dragenter="dragenter"
+    @dragleave="dragleave"
+    @dragend="isDropZone = false"
     @dragover="dragover"
     @drop="drop"
     :data-testid="`file-row-${file.name}`"
-    class="w-full flex file-row-separator"
+    :data-file-id="file.id"
+    :draggable="isDraggable ? 'true' : undefined"
+    :data-drop-over="isMoveTarget ? 'true' : undefined"
+    role="row"
+    :aria-selected="isSelectable ? props.selected : undefined"
+    class="w-full flex file-row-separator file-row prevent-select"
     :class="{
-      'bg-paper-50 dark:bg-brownish-700': !!checked,
-      [sharedClass]: true,
-      'outline-2 outline-redish-300 outline z-10': isDropZone
+      [rowClass]: true,
+      'opacity-50': isBeingMoved,
+      '!bg-orangy-500/20 outline outline-2 -outline-offset-2 outline-orangy-500 z-10':
+        isMoveTarget,
+      'outline-2 outline-redish-300 outline z-10': isDropZone,
+      'outline outline-1 -outline-offset-1 outline-greeny-300 dark:outline-greeny-700':
+        props.highlighted && !isDropZone && !isMoveTarget
     }"
+    @click="click"
+    @dblclick="doubleClick"
   >
-    <div :class="sizes.checkbox">
-      <TableCheckboxCell
-        v-if="!props.hideCheckbox && !isSyntheticRoot"
-        v-model="checked"
-        :label="$t('common.selectRow', { name: file.name })"
-      />
+    <div role="gridcell" class="flex flex-1 min-w-0">
+      <button
+        ref="navButton"
+        :class="`${sizes.name} flex justify-start cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-redish-400/60 dark:focus-visible:ring-redish-500/50`"
+        :title="fileName"
+        data-row-nav
+        @keydown.space.prevent="(e: KeyboardEvent) => emits('row-click', e, file)"
+        @keydown.enter.prevent="open"
+      >
+        <FileThumbnail :file="file" img-class="w-6 h-6 mr-2 rounded-md shrink-0">
+          <FileIconTile
+            v-if="showProgress"
+            :path="mdiUploadOutline"
+            tile-class="w-6 h-6 mr-2"
+            icon-class="text-greeny-500 dark:text-greeny-300"
+            data-testid="uploading-icon"
+          />
+          <FileIconTile
+            v-else-if="isStalledUpload"
+            :path="mdiAlertCircleOutline"
+            tile-class="w-6 h-6 mr-2"
+            icon-class="text-orangy-800 dark:text-orangy-400"
+            :title="$t('files.row.uploadIncomplete')"
+            data-testid="stalled-upload-icon"
+          />
+          <FileIconTile
+            v-else-if="file.id === SHARED_WITH_ME_DIR_ID"
+            :path="mdiFolderAccount"
+            tile-class="w-6 h-6 mr-2"
+            icon-class="text-orangy-800 dark:text-orangy-400"
+            data-testid="shared-with-me-folder-icon"
+          />
+          <FileIconTile v-else :mime="file.mime" tile-class="w-6 h-6 mr-2" />
+        </FileThumbnail>
+
+        <TruncatedSpan :text="fileName" />
+        <span
+          v-if="isSharedOut"
+          class="ml-2 inline-flex items-center text-brownish-400 dark:text-brownish-50"
+          :title="sharedOutTitle"
+          data-testid="shared-out-badge"
+        >
+          <BaseIcon :path="mdiShareVariantOutline" :size="14" />
+        </span>
+        <!-- Saving-in-another-session badge. Surfaced as soon as the
+             server reports a pending_version on the row so users get a
+             heads-up before they try to edit and run into a 409. -->
+        <span
+          v-if="file.pending_version != null"
+          class="ml-2 inline-flex items-center text-orangy-800 dark:text-orangy-400"
+          :title="$t('files.row.savingInAnotherSession')"
+        >
+          <BaseIcon :path="mdiCloudSyncOutline" :size="14" />
+        </span>
+        <span
+          v-if="ownerBadgeEmail"
+          class="ml-2 inline-flex items-center max-w-[10rem] truncate px-2 py-0.5 rounded-full text-xs font-semibold bg-paper-100 dark:bg-brownish-800 text-brownish-700 dark:text-brownish-50"
+          :title="$t('files.row.ownedBy', { email: ownerBadgeEmail })"
+          data-testid="shared-by-badge"
+        >
+          {{ ownerBadgeEmail }}
+        </span>
+      </button>
     </div>
 
-    <button
-      :class="`${sizes.name} flex justify-start cursor-pointer prevent-select text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-redish-400/60 dark:focus:ring-redish-500/50`"
-      :title="fileName"
-      data-row-nav
-      :data-file-id="file.id"
-      @click="click"
-      @dblclick="doubleClick"
-      @keydown.space.prevent="singleClick"
-    >
-      <FileThumbnail :file="file" img-class="w-6 h-6 mr-2 rounded-md shrink-0">
-        <FileIconTile
-          v-if="showProgress"
-          :path="mdiUploadOutline"
-          tile-class="w-6 h-6 mr-2"
-          icon-class="text-greeny-500 dark:text-greeny-300"
-          data-testid="uploading-icon"
-        />
-        <FileIconTile
-          v-else-if="isStalledUpload"
-          :path="mdiAlertCircleOutline"
-          tile-class="w-6 h-6 mr-2"
-          icon-class="text-orangy-800 dark:text-orangy-400"
-          :title="$t('files.row.uploadIncomplete')"
-          data-testid="stalled-upload-icon"
-        />
-        <FileIconTile
-          v-else-if="file.id === SHARED_WITH_ME_DIR_ID"
-          :path="mdiFolderAccount"
-          tile-class="w-6 h-6 mr-2"
-          icon-class="text-orangy-800 dark:text-orangy-400"
-          data-testid="shared-with-me-folder-icon"
-        />
-        <FileIconTile v-else :mime="file.mime" tile-class="w-6 h-6 mr-2" />
-      </FileThumbnail>
-
-      <TruncatedSpan :text="fileName" />
-      <span
-        v-if="isSharedOut"
-        class="ml-2 inline-flex items-center text-brownish-400 dark:text-brownish-50"
-        :title="sharedOutTitle"
-        data-testid="shared-out-badge"
-      >
-        <BaseIcon :path="mdiShareVariantOutline" :size="14" />
-      </span>
-      <!-- Saving-in-another-session badge. Surfaced as soon as the
-           server reports a pending_version on the row so users get a
-           heads-up before they try to edit and run into a 409. -->
-      <span
-        v-if="file.pending_version != null"
-        class="ml-2 inline-flex items-center text-orangy-800 dark:text-orangy-400"
-        :title="$t('files.row.savingInAnotherSession')"
-      >
-        <BaseIcon :path="mdiCloudSyncOutline" :size="14" />
-      </span>
-      <span
-        v-if="ownerBadgeEmail"
-        class="ml-2 inline-flex items-center max-w-[10rem] truncate px-2 py-0.5 rounded-full text-xs font-semibold bg-paper-100 dark:bg-brownish-800 text-brownish-700 dark:text-brownish-50"
-        :title="$t('files.row.ownedBy', { email: ownerBadgeEmail })"
-        data-testid="shared-by-badge"
-      >
-        {{ ownerBadgeEmail }}
-      </span>
-    </button>
-
-    <div :class="sizes.size" :title="fileSize">
+    <div role="gridcell" :class="sizes.size" :title="fileSize">
       <span>{{ fileSize || '-' }}</span>
     </div>
 
-    <div :class="sizes.type" :title="props.file.mime">
+    <div role="gridcell" :class="sizes.type" :title="props.file.mime">
       <TruncatedSpan :text="prettyMime(props.file.mime)" />
     </div>
 
-    <div :class="sizes.modifiedAt" :title="fileModifiedAt">
+    <div role="gridcell" :class="sizes.modifiedAt" :title="fileModifiedAt">
       <TruncatedSpan :text="fileModifiedAt" />
     </div>
 
-    <div :class="sizes.buttons">
+    <div role="gridcell" :class="sizes.buttons" data-row-actions>
       <template v-if="!isSyntheticRoot">
         <BaseButton
           class="ml-2 sm:hidden float-right"
@@ -414,6 +457,7 @@ const drop = (e: DragEvent) => {
 
   <div
     v-if="showProgress"
+    aria-hidden="true"
     class="border-b-2 border-greeny-500 dark:border-greeny-400 -mt-[1px]"
     :style="{
       width: progressValue + '%'
@@ -433,5 +477,23 @@ const drop = (e: DragEvent) => {
 
 .dark .file-row-separator {
   box-shadow: inset 0 -1px 0 0 rgba(120, 120, 120, 0.1);
+}
+
+/* orangy-500, the same accent as the sidebar's active item */
+.file-row-separator.file-row-selected {
+  box-shadow:
+    inset 3px 0 0 0 #ee9b5c,
+    inset 0 -1px 0 0 rgba(120, 120, 120, 0.15);
+}
+
+.dark .file-row-separator.file-row-selected {
+  box-shadow:
+    inset 3px 0 0 0 #ee9b5c,
+    inset 0 -1px 0 0 rgba(120, 120, 120, 0.1);
+}
+
+/* A long press selects the row; iOS would otherwise raise its link/image callout. */
+.file-row {
+  -webkit-touch-callout: none;
 }
 </style>

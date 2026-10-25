@@ -59,8 +59,13 @@ export function classifyMove(args: {
    *  Set for any destination inside a shared tree — including folders
    *  below the share root, which `isSharedFolder` alone can't see. */
   destinationRosterId?: string
+  /** Same, for the folder the sources leave. Without it a move out of a
+   *  subfolder of a share would go through plain `move-many`, which keeps
+   *  every member's access row on the moved items. */
+  sourceRosterId?: string
 }): MoveDecision {
-  const { sources, destination, sourceParent, sharingEnabled, destinationRosterId } = args
+  const { sources, destination, sourceParent, sharingEnabled, destinationRosterId, sourceRosterId } =
+    args
   if (sources.length === 0) {
     return { kind: 'plain', sources, destinationId: destination?.id }
   }
@@ -82,7 +87,8 @@ export function classifyMove(args: {
     }
   }
 
-  const sourceShared = sharingEnabled && isSharedFolder(sourceParent)
+  const sourceShared =
+    sharingEnabled && (sourceRosterId != null || isSharedFolder(sourceParent))
   if (!sourceShared) {
     return { kind: 'plain', sources, destinationId: destination?.id }
   }
@@ -98,7 +104,25 @@ export function classifyMove(args: {
 
 export interface MoveResult {
   moved: number
+  /** Ids actually relocated, in order. A partial batch lists only those. */
+  movedIds: string[]
   blocked?: string
+  /** A confirmation was declined part-way; `movedIds` went before it. */
+  aborted?: boolean
+}
+
+/**
+ * Thrown when a shared-path batch fails after some items already moved, so
+ * the caller can still refresh for those before surfacing `cause`.
+ */
+export class MovePartiallyFailed extends Error {
+  constructor(
+    readonly movedIds: string[],
+    readonly cause: unknown
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause))
+    this.name = 'MovePartiallyFailed'
+  }
 }
 
 export interface ExecuteMoveDeps {
@@ -108,6 +132,10 @@ export interface ExecuteMoveDeps {
   plainMove: (sources: AppFile[], destinationId: string | undefined) => Promise<void>
   /** Fires before any folder cascade wraps a key; false aborts the move. */
   confirmCascade?: (folder: AppFile, preview: MoveCascadePreview) => Promise<boolean>
+  /** Fires once, before the first plain file of the batch is wrapped for the
+   *  destination members (after their roster verified); covers every file
+   *  in the batch. Without it files move in unprompted. */
+  confirmFiles?: (files: AppFile[], preview: MoveCascadePreview) => Promise<boolean>
   onProgress?: MoveIntoSharedFolderOptions['onProgress']
   onSubtreeProgress?: MoveIntoSharedFolderOptions['onSubtreeProgress']
   onUnknownMember?: (prompt: UnknownMemberPrompt) => Promise<boolean>
@@ -135,13 +163,16 @@ export async function executeMove(
 
   switch (decision.kind) {
     case 'blocked':
-      return { moved: 0, blocked: decision.message }
+      return { moved: 0, movedIds: [], blocked: decision.message }
 
     case 'plain':
       await deps.plainMove(decision.sources, decision.destinationId)
-      return { moved: decision.sources.length }
+      return { moved: decision.sources.length, movedIds: decision.sources.map((f) => f.id) }
 
     case 'into-shared': {
+      const movedIds: string[] = []
+      const files = decision.sources.filter((f) => f.mime !== 'dir')
+      let filesConfirmed = !deps.confirmFiles
       try {
         for (const item of decision.sources) {
           if (item.mime === 'dir') {
@@ -165,39 +196,56 @@ export async function executeMove(
               }
             )
           } else {
-            await moveSingleFileIntoSharedFolder({
-              callerUserId: deps.callerUserId,
-              callerPrivateKey: privateKey,
-              callerWrappingPrivateKey: wrappingPrivateKey,
-              file: item,
-              destinationFolderId: decision.destinationFolderId,
-              rosterFolderId: decision.rosterFolderId,
-              trustedFingerprints: trusted,
-              onUnknownMember
-            })
+            await moveSingleFileIntoSharedFolder(
+              {
+                callerUserId: deps.callerUserId,
+                callerPrivateKey: privateKey,
+                callerWrappingPrivateKey: wrappingPrivateKey,
+                file: item,
+                destinationFolderId: decision.destinationFolderId,
+                rosterFolderId: decision.rosterFolderId,
+                trustedFingerprints: trusted,
+                onUnknownMember
+              },
+              {
+                confirm: filesConfirmed
+                  ? undefined
+                  : async (preview) => {
+                      filesConfirmed = await deps.confirmFiles!(files, preview)
+                      return filesConfirmed
+                    }
+              }
+            )
           }
+          movedIds.push(item.id)
         }
       } catch (err) {
-        // A declined cascade-confirm (or TOFU prompt) aborts the move with
-        // nothing sent — surface it as a no-op, not an error.
+        // A declined confirm (or TOFU prompt) stops the batch with nothing
+        // more sent: report what went before it, not an error.
         if (err instanceof UploadIntoSharedFolderAborted) {
-          return { moved: 0 }
+          return { moved: movedIds.length, movedIds, aborted: true }
         }
-        throw err
+        throw movedIds.length ? new MovePartiallyFailed(movedIds, err) : err
       }
-      return { moved: decision.sources.length }
+      return { moved: movedIds.length, movedIds }
     }
 
     case 'move-out': {
-      for (const item of decision.sources) {
-        await moveOutOfSharedFolder({
-          callerUserId: deps.callerUserId,
-          callerPrivateKey: privateKey,
-          fileId: item.id,
-          destinationFolderId: decision.destinationId ?? null
-        })
+      const movedIds: string[] = []
+      try {
+        for (const item of decision.sources) {
+          await moveOutOfSharedFolder({
+            callerUserId: deps.callerUserId,
+            callerPrivateKey: privateKey,
+            fileId: item.id,
+            destinationFolderId: decision.destinationId ?? null
+          })
+          movedIds.push(item.id)
+        }
+      } catch (err) {
+        throw movedIds.length ? new MovePartiallyFailed(movedIds, err) : err
       }
-      return { moved: decision.sources.length }
+      return { moved: movedIds.length, movedIds }
     }
   }
 }

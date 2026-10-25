@@ -170,7 +170,7 @@ useKeyboardShortcuts([
     key: 'Escape',
     inEditable: true,
     inDialog: true,
-    preventDefault: false,
+    // Claims the key, so the file list doesn't also clear its selection on it.
     when: () => showTable.value,
     handler: () => (showTable.value = false)
   }

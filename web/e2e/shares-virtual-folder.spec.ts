@@ -103,11 +103,11 @@ test.describe('Virtual "Shared with me" folder under /files', () => {
     await expect(page.locator('[data-testid="actions-share-account"]').first()).toBeVisible()
   })
 
-  test('synthetic Shared with me row offers no menu and no checkbox', async ({ page }) => {
+  test('synthetic Shared with me row offers no menu and cannot be selected', async ({ page }) => {
     // The synthetic root id is a client-only marker — every action would
     // route a literal `__shared_with_me__` into a real storage endpoint
-    // and bounce off the path-attribute validator with a 400, so neither
-    // the dropdown nor the selection checkbox is rendered.
+    // and bounce off the path-attribute validator with a 400, so the
+    // dropdown isn't rendered and the row never joins the selection.
     const alice = await createUser(page, randomEmail(), randomPassword())
     await logout(page)
     const bob = await createUser(page, randomEmail(), randomPassword())
@@ -121,7 +121,9 @@ test.describe('Virtual "Shared with me" folder under /files', () => {
     const syntheticRow = page.getByTestId('file-row-Shared with me')
     await expect(syntheticRow).toBeVisible({ timeout: 15_000 })
     await expect(syntheticRow.locator('[name="actions-dropdown"]')).toHaveCount(0)
-    await expect(syntheticRow.locator('input[type="checkbox"]')).toHaveCount(0)
+    await expect(syntheticRow).not.toHaveAttribute('aria-selected')
+    await syntheticRow.click()
+    await expect(page.getByTestId('files-selected-count')).toHaveCount(0)
   })
 
   test('rename of an incoming share keeps the row in the virtual folder', async ({ page }) => {
@@ -157,7 +159,7 @@ test.describe('Virtual "Shared with me" folder under /files', () => {
     // — the dropdown's Rename entry is owner-only by convention, but the
     // bulk-action bar drops that gate so non-owners can rename what the
     // backend allows them to.
-    await row.locator('input[type="checkbox"]').check()
+    await row.click()
     await page.locator('button[title="Rename file or folder"]').first().click()
     const nameInput = page.getByPlaceholder('new name')
     await nameInput.fill('renamed-note.md')

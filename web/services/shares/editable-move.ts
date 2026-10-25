@@ -10,6 +10,7 @@ import {
 } from './editable-members'
 import {
   UploadIntoSharedFolderAborted,
+  type MoveCascadePreview,
   type MoveIntoSharedFolderArgs,
   type MoveIntoSharedFolderOptions,
   type UnknownMemberPrompt
@@ -49,6 +50,9 @@ export async function moveSingleFileIntoSharedFolder(
     signal?: AbortSignal
     fetchMembers?: (folderId: string) => Promise<FolderMembersResponse>
     postMove?: (body: MoveIntoSharedBody) => Promise<void>
+    /** Gate after the roster verified and before any key is wrapped, like
+     *  the cascade's; false aborts with `UploadIntoSharedFolderAborted`. */
+    confirm?: (preview: MoveCascadePreview) => Promise<boolean>
   } = {}
 ): Promise<void> {
   ensureNotAborted(options.signal)
@@ -71,6 +75,10 @@ export async function moveSingleFileIntoSharedFolder(
     args.trustedFingerprints,
     args.onUnknownMember
   )
+
+  if (options.confirm && !(await options.confirm({ itemCount: 0, members: response.members }))) {
+    throw new UploadIntoSharedFolderAborted()
+  }
 
   const submit = async (snapshot: FolderMembersResponse): Promise<void> => {
     ensureNotAborted(options.signal)

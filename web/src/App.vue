@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, useRouter } from 'vue-router'
 import DebugOverlay from '@/components/ui/DebugOverlay.vue'
+import ContextMenuHost from '@/components/ui/ContextMenuHost.vue'
 import RouteLoadingBar from '@/components/ui/RouteLoadingBar.vue'
 
 // The boot splash in index.html sits outside #app, because mounting only
@@ -15,5 +16,6 @@ useRouter()
   <notifications class="m-4 text-lg" :pause-on-hover="true" />
   <RouteLoadingBar />
   <RouterView />
+  <ContextMenuHost />
   <DebugOverlay />
 </template>

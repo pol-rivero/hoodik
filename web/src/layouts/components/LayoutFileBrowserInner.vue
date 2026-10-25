@@ -3,6 +3,7 @@ import CreateDirectoryModal from '@/components/files/modals/CreateDirectoryModal
 import CreateFileModal from '@/components/files/modals/CreateFileModal.vue'
 import DeleteMultipleModal from '@/components/files/modals/DeleteMultipleModal.vue'
 import MoveMultipleModal from '@/components/files/modals/MoveMultipleModal.vue'
+import MoveConfirmHost from '@/components/files/modals/MoveConfirmHost.vue'
 import UploadButton from '@/components/files/browser/UploadButton.vue'
 import DetailsModal from '@/components/files/modals/DetailsModal.vue'
 import ActionsModal from '@/components/files/modals/ActionsModal.vue'
@@ -639,6 +640,7 @@ watch(
     :kp="Crypto.keypair"
     :authenticated="props.authenticated"
   />
+  <MoveConfirmHost />
 
   <RevokeConfirmModal
     v-if="leaveConfirmFile"

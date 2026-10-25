@@ -45,6 +45,7 @@ watch(
     name="thumbnail"
     :src="thumbnail"
     :alt="file.name"
+    draggable="false"
     :class="imgClass ?? 'w-6 h-6 rounded-md'"
   />
   <span

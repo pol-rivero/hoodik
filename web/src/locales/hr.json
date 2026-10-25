@@ -539,11 +539,18 @@
       "createDirectory": "Kreiraj folder",
       "emptyFolder": "Ovaj folder je prazan",
       "emptyFolderHint": "Dovuci datoteke ovdje ili ih dodaj gumbom za upload",
+      "fileList": "Datoteke",
       "newFile": "Nova datoteka",
       "renameTitle": "Preimenuj datoteku ili folder",
       "selectedCount": "Odabrano: {count}",
       "uploadFiles": "Upload datoteka",
       "uploadFolder": "Upload foldera"
+    },
+    "contextMenu": {
+      "downloadZip": "Preuzmi kao ZIP",
+      "move": "Premjesti u…",
+      "shortcutDelete": "Del",
+      "shortcutSelectAll": "Ctrl+A"
     },
     "createDirectory": {
       "nameLabel": "Naziv foldera",
@@ -567,6 +574,14 @@
     },
     "details": {
       "uploaded": "Uploadano"
+    },
+    "dragMove": {
+      "busy": "Drugo premještanje je još u tijeku.",
+      "itemCount": "{count} stavka | {count} stavke | {count} stavki",
+      "moved": "{count} stavka premještena u {folder} | {count} stavke premještene u {folder} | {count} stavki premješteno u {folder}",
+      "partial": "Premješteno {moved} od {total} stavki u {folder}. Ostale su ostale gdje su bile.",
+      "shareFilesMessage": "Premještanje '{name}' u '{destination}' podijelit će je s {members}. | Premještanje {count} datoteke u '{destination}' podijelit će ih s {members}. | Premještanje {count} datoteka u '{destination}' podijelit će ih s {members}.",
+      "shareFilesTitle": "Premjestiti i podijeliti?"
     },
     "move": {
       "home": "Početna",

@@ -16,8 +16,7 @@ vi.mock('vue-router', () => ({
 const OWNER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
 
 const SIZES = {
-  checkbox: 'pl-2 pt-3 w-10 shrink-0',
-  name: 'flex-1 p-2 pt-3 min-w-0 flex',
+  name: 'flex-1 p-2 pt-3 pl-3 min-w-0 flex',
   size: 'hidden p-2 pt-3 md:block w-28 shrink-0',
   type: 'hidden p-2 pt-3 xl:block w-24 shrink-0',
   modifiedAt: 'hidden p-2 pt-3 sm:block w-52 shrink-0',
@@ -49,7 +48,7 @@ function baseFile(overrides: Partial<AppFile> = {}): AppFile {
 
 function mountRow(file: AppFile): ReturnType<typeof mount> {
   return mount(TableFileRow, {
-    props: { file, checkedIds: new Set<string>(), sizes: SIZES }
+    props: { file, selected: false, sizes: SIZES }
   })
 }
 
@@ -90,58 +89,94 @@ describe('TableFileRow: shared-out hint', () => {
   })
 })
 
-describe('TableFileRow: synthetic shared-with-me row', () => {
-  it('renders no checkbox on the synthetic root', () => {
+describe('TableFileRow: selection state', () => {
+  it('leaves the synthetic root out of the selection model', () => {
     const wrapper = mountRow(
       baseFile({ id: SHARED_WITH_ME_DIR_ID, mime: 'dir', name: 'Shared with me' })
     )
+    expect(wrapper.get('[role="row"]').attributes('aria-selected')).toBeUndefined()
     expect(wrapper.find('input[type="checkbox"]').exists()).toBe(false)
   })
 
-  it('clicking the row name does not emit select-one on the synthetic row', async () => {
-    const wrapper = mountRow(
-      baseFile({ id: SHARED_WITH_ME_DIR_ID, mime: 'dir', name: 'Shared with me' })
-    )
-    // First click in the row's single-click handler would normally toggle
-    // selection. The synthetic id short-circuits before the emit.
-    await wrapper.find('button').trigger('click')
-    expect(wrapper.emitted('select-one')).toBeFalsy()
+  it('reports whether a regular row is selected, without a checkbox', () => {
+    const file = baseFile()
+    const unselected = mountRow(file)
+    expect(unselected.get('[role="row"]').attributes('aria-selected')).toBe('false')
+    expect(unselected.find('input[type="checkbox"]').exists()).toBe(false)
+
+    const selected = mount(TableFileRow, {
+      props: { file, selected: true, sizes: SIZES }
+    })
+    const row = selected.get('[role="row"]')
+    expect(row.attributes('aria-selected')).toBe('true')
+    expect(row.classes()).toContain('file-row-selected')
   })
 
-  it('regular rows still render an enabled checkbox', () => {
-    const wrapper = mountRow(baseFile())
-    const checkbox = wrapper.find('input[type="checkbox"]')
-    expect(checkbox.exists()).toBe(true)
-    expect((checkbox.element as HTMLInputElement).disabled).toBe(false)
+  it('has no selection state at all when selection is disabled', () => {
+    const wrapper = mount(TableFileRow, {
+      props: {
+        file: baseFile(),
+        selected: false,
+        selectionDisabled: true,
+        sizes: SIZES
+      }
+    })
+    expect(wrapper.get('[role="row"]').attributes('aria-selected')).toBeUndefined()
   })
 })
 
-describe('TableFileRow: plain click selection', () => {
-  const OTHER_ID = '22222222-2222-2222-2222-222222222222'
+describe('TableFileRow: dragging', () => {
+  const mountWith = (file: AppFile, extra: Record<string, unknown> = {}) =>
+    mount(TableFileRow, { props: { file, selected: true, sizes: SIZES, ...extra } })
 
-  const clickRow = async (checkedIds: Set<string>) => {
-    const file = baseFile()
-    const wrapper = mount(TableFileRow, { props: { file, checkedIds, sizes: SIZES } })
-    await wrapper.find('button[data-row-nav]').trigger('click')
-    return wrapper
-  }
-
-  it('selects an unselected row on its own', async () => {
-    const wrapper = await clickRow(new Set([OTHER_ID]))
-    expect(wrapper.emitted('deselect-all')).toHaveLength(1)
-    expect(wrapper.emitted('select-one')).toEqual([[true, baseFile()]])
+  it('makes only a selected row draggable', () => {
+    expect(mountRow(baseFile()).get('[role="row"]').attributes('draggable')).toBeUndefined()
+    expect(mountWith(baseFile()).get('[role="row"]').attributes('draggable')).toBe('true')
   })
 
-  it('keeps a row selected when it was one of several', async () => {
-    const wrapper = await clickRow(new Set([baseFile().id, OTHER_ID]))
-    expect(wrapper.emitted('deselect-all')).toHaveLength(1)
-    expect(wrapper.emitted('select-one')).toEqual([[true, baseFile()]])
+  it('never drags the synthetic root or a row in a list without selection', () => {
+    const root = baseFile({ id: SHARED_WITH_ME_DIR_ID, mime: 'dir', name: 'Shared with me' })
+    expect(mountWith(root).get('[role="row"]').attributes('draggable')).toBeUndefined()
+    expect(
+      mountWith(baseFile(), { selectionDisabled: true }).get('[role="row"]').attributes('draggable')
+    ).toBeUndefined()
   })
 
-  it('clears the selection when the row was the only one selected', async () => {
-    const wrapper = await clickRow(new Set([baseFile().id]))
-    expect(wrapper.emitted('deselect-all')).toHaveLength(1)
-    expect(wrapper.emitted('select-one')).toBeFalsy()
+  it('keeps thumbnails from being dragged on their own', () => {
+    const wrapper = mountRow(baseFile({ mime: 'image/png', thumbnail: 'data:image/png;base64,' }))
+    expect(wrapper.get('img').attributes('draggable')).toBe('false')
+  })
+})
+
+describe('TableFileRow: clicks', () => {
+  it('hands a click anywhere on the row to the table, with its modifiers', async () => {
+    const wrapper = mountRow(baseFile())
+    await wrapper.find('[role="gridcell"]:nth-child(2)').trigger('click', { ctrlKey: true })
+
+    const [[event, file]] = wrapper.emitted('row-click') as [MouseEvent, AppFile][]
+    expect(event.ctrlKey).toBe(true)
+    expect(file.id).toBe(baseFile().id)
+  })
+
+  it('keeps clicks on the actions cell to the actions', async () => {
+    const wrapper = mountRow(baseFile())
+    await wrapper.find('[data-row-actions]').trigger('click')
+    await wrapper.find('[data-row-actions]').trigger('dblclick')
+    expect(wrapper.emitted('row-click')).toBeFalsy()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('Space selects through the table and Enter opens', async () => {
+    routerPush.mockClear()
+    const dir = baseFile({ mime: 'dir', name: 'Photos' })
+    const wrapper = mountRow(dir)
+    const button = wrapper.find('button[data-row-nav]')
+
+    await button.trigger('keydown', { key: ' ' })
+    expect(wrapper.emitted('row-click')).toHaveLength(1)
+
+    await button.trigger('keydown', { key: 'Enter' })
+    expect(routerPush).toHaveBeenCalledWith({ name: 'files', params: { file_id: dir.id } })
   })
 })
 

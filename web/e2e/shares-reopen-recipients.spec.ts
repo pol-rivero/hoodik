@@ -69,7 +69,7 @@ test.describe('Sharing modal renders existing recipients on every Share entry po
     await loginAsUser(page, alice.email, alice.password)
     await uploadAndShareWithBob(page, bob.email, 'reader')
 
-    await page.getByTestId('file-row-test-image.png').locator('input[type="checkbox"]').check()
+    await page.getByTestId('file-row-test-image.png').click()
     // Only one Share button surfaces from the toolbar now — the unified
     // entry that opens SharingModal.
     await expect(page.getByTestId('bulk-sharing-button')).toBeVisible()

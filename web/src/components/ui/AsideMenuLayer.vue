@@ -5,6 +5,7 @@ import { store as style } from '!/style'
 import { store as crypto } from '!/crypto'
 import AsideMenuList from '@/components/ui/AsideMenuList.vue'
 import AsideFileTree from '@/components/ui/AsideFileTree.vue'
+import FolderDropTarget from '@/components/files/FolderDropTarget.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import type { AsideMenuItemType } from '@/menuAside'
 import { useRouter } from 'vue-router'
@@ -95,7 +96,16 @@ const asideLgCloseClick = (event: Event) => {
       <div class="flex-1 overflow-y-auto overflow-x-hidden">
         <template v-for="item in menu" :key="(item.to as any)?.name || item.label">
           <template v-if="item.expandable && hasKeypair">
-            <AsideMenuList :menu="[item]" @menu-click="() => toggleExpand(item)" />
+            <!-- The files entry stands for the account root: dropping dragged
+                 rows on it moves them there; hovering opens the tree. -->
+            <FolderDropTarget
+              :ancestors="[]"
+              over-class="ring-2 ring-inset ring-orangy-400 bg-orangy-500/20"
+              spring-load
+              @spring-load="expandedKey = (item.to as any)?.name"
+            >
+              <AsideMenuList :menu="[item]" @menu-click="() => toggleExpand(item)" />
+            </FolderDropTarget>
             <AsideFileTree
               v-if="expandedKey === (item.to as any)?.name"
               :keypair="cryptoStore.keypair!"

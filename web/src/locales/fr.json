@@ -539,11 +539,18 @@
       "createDirectory": "Créer un dossier",
       "emptyFolder": "Ce dossier est vide",
       "emptyFolderHint": "Déposez des fichiers ici ou utilisez le bouton de téléversement pour en ajouter",
+      "fileList": "Fichiers",
       "newFile": "Nouveau fichier",
       "renameTitle": "Renommer un fichier ou un dossier",
       "selectedCount": "{count} sélectionné(s)",
       "uploadFiles": "Téléverser des fichiers",
       "uploadFolder": "Téléverser un dossier"
+    },
+    "contextMenu": {
+      "downloadZip": "Télécharger en ZIP",
+      "move": "Déplacer vers…",
+      "shortcutDelete": "Suppr",
+      "shortcutSelectAll": "Ctrl+A"
     },
     "createDirectory": {
       "nameLabel": "Nom du dossier",
@@ -567,6 +574,14 @@
     },
     "details": {
       "uploaded": "Téléversé"
+    },
+    "dragMove": {
+      "busy": "Un autre déplacement est encore en cours.",
+      "itemCount": "{count} élément | {count} éléments",
+      "moved": "{count} élément déplacé vers {folder} | {count} éléments déplacés vers {folder}",
+      "partial": "{moved} élément(s) sur {total} déplacé(s) vers {folder}. Les autres sont restés à leur place.",
+      "shareFilesMessage": "Déplacer « {name} » dans « {destination} » le partagera avec {members}. | Déplacer {count} fichiers dans « {destination} » les partagera avec {members}.",
+      "shareFilesTitle": "Déplacer et partager ?"
     },
     "move": {
       "home": "Accueil",

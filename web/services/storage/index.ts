@@ -119,6 +119,12 @@ export const store = defineStore('files', () => {
   const fileId = ref<string | undefined>()
 
   /**
+   * Folder the listing currently shows (undefined = account root), even
+   * before its own row has loaded — unlike `dir`, which needs the row.
+   */
+  const currentDirId = computed<string | undefined>(() => fileId.value)
+
+  /**
    * Last error message that happened when trying to
    * fetch the files from the backend.
    */
@@ -753,7 +759,9 @@ export const store = defineStore('files', () => {
   async function moveAll(
     kp: KeyPair,
     files: AppFile[],
-    file_id?: string | null | undefined
+    file_id?: string | null | undefined,
+    /** Folder the files leave; defaults to the one listed when called. */
+    sourceFolderId: string | null | undefined = fileId.value
   ): Promise<void> {
     await meta.moveMany({ ids: files.map((f) => f.id), file_id })
 
@@ -762,7 +770,7 @@ export const store = defineStore('files', () => {
     }
 
     await find(kp, fileId.value, false)
-    emitFileTreeChange({ type: 'moved', folderId: fileId.value || undefined, targetFolderId: file_id || undefined })
+    emitFileTreeChange({ type: 'moved', folderId: sourceFolderId || undefined, targetFolderId: file_id || undefined })
   }
 
   /**
@@ -976,6 +984,7 @@ export const store = defineStore('files', () => {
     addItem,
     bumpSharedWithCount,
     createDir,
+    currentDirId,
     decryptItem,
     deselectAll,
     dir,

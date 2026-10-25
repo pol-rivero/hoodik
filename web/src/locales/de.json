@@ -539,11 +539,18 @@
       "createDirectory": "Ordner erstellen",
       "emptyFolder": "Dieser Ordner ist leer",
       "emptyFolderHint": "Ziehen Sie Dateien hierher oder nutzen Sie die Hochladen-Schaltfläche",
+      "fileList": "Dateien",
       "newFile": "Neue Datei",
       "renameTitle": "Datei oder Ordner umbenennen",
       "selectedCount": "{count} ausgewählt",
       "uploadFiles": "Dateien hochladen",
       "uploadFolder": "Ordner hochladen"
+    },
+    "contextMenu": {
+      "downloadZip": "Als ZIP herunterladen",
+      "move": "Verschieben nach…",
+      "shortcutDelete": "Entf",
+      "shortcutSelectAll": "Strg+A"
     },
     "createDirectory": {
       "nameLabel": "Ordnername",
@@ -567,6 +574,14 @@
     },
     "details": {
       "uploaded": "Hochgeladen"
+    },
+    "dragMove": {
+      "busy": "Ein anderer Verschiebevorgang läuft noch.",
+      "itemCount": "{count} Element | {count} Elemente",
+      "moved": "{count} Element nach {folder} verschoben | {count} Elemente nach {folder} verschoben",
+      "partial": "{moved} von {total} Elementen nach {folder} verschoben. Der Rest ist geblieben, wo er war.",
+      "shareFilesMessage": "Wenn Sie „{name}“ nach „{destination}“ verschieben, wird es mit {members} geteilt. | Wenn Sie {count} Dateien nach „{destination}“ verschieben, werden sie mit {members} geteilt.",
+      "shareFilesTitle": "Verschieben und teilen?"
     },
     "move": {
       "home": "Hauptordner",

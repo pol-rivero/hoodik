@@ -14,14 +14,38 @@ import {
 } from '@mdi/js'
 import { useCapability } from '@/composables/useCapability'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import TableCheckboxCell from '@/components/ui/TableCheckboxCell.vue'
+import { useMarqueeSelection } from '@/composables/useMarqueeSelection'
+import { useLongPress } from '@/composables/useLongPress'
+import { rangeBetween, sameSet } from '@/utils/selection'
 import SortableName from '@/components/ui/SortableName.vue'
 import TableFileRowWatcher from './TableFileRowWatcher.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  blankMenuItems,
+  canCreateHere,
+  fileCapabilities,
+  fileMenuItems,
+  fileOpenRoute,
+  parentFolderRoute,
+  selectionMenuItems,
+  type BlankMenuAction,
+  type FileMenuAction,
+  type SelectionMenuAction
+} from '@/components/files/browser/fileMenuItems'
+import {
+  closeContextMenu,
+  openContextMenu,
+  openContextMenuFromEvent,
+  type ContextMenuRequest
+} from '@/composables/useContextMenu'
+import { useFolderDropTarget } from '@/composables/useFolderDropTarget'
+import { computed, onMounted, onUnmounted, ref, type HTMLAttributes } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import type { AppFile } from 'types'
 import { isPreviewable, isMarkdownFile } from '!/preview'
-import { SHARED_WITH_ME_DIR_ID, canWriteToShared } from '!/storage'
+import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { beginFileDrag, endFileDrag, isInternalFileDrag } from '!/storage/dragMove'
 
 const props = defineProps<{
   selected: AppFile[]
@@ -31,7 +55,7 @@ const props = defineProps<{
   dir: AppFile | null
   file_id?: string
   searchedFileId?: string
-  hideCheckbox?: boolean
+  selectionDisabled?: boolean
   hideDelete?: boolean
   share?: boolean
   showActions?: boolean
@@ -59,13 +83,17 @@ const emits = defineEmits<{
   (event: 'leave', file: AppFile): void
   (event: 'select-all', files: AppFile[], fileId: string | null | undefined): void
   (event: 'select-one', select: boolean, file: AppFile): void
+  (event: 'set-selection', files: AppFile[]): void
   (event: 'set-sort-simple', value: string): void
   (event: 'upload-many', files: FileList, dirId?: string): void
   (event: 'browse-folder'): void
   (event: 'upload-folder-entries', entries: FileSystemEntry[], dirId?: string): void
 }>()
 
-const checked = ref(false)
+const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
+
 const isDropZone = ref(false)
 
 const dirId = computed<string | undefined>(() => {
@@ -76,42 +104,95 @@ const dirId = computed<string | undefined>(() => {
   return undefined
 })
 
-const checkedIds = computed(() => new Set(props.selected.map((file) => file.id)))
+const selectedIds = computed(() => new Set(props.selected.map((file) => file.id)))
 
-const checkedRows = computed(() => {
-  return props.items.filter((item) => checkedIds.value.has(item.id))
+const selectedRows = computed(() => {
+  return props.items.filter((item) => selectedIds.value.has(item.id))
 })
 
+const tableEl = ref<HTMLElement | null>(null)
+
+// The same condition that renders the rows; the loading, empty and error
+// states inside the table are no grid.
+const hasRows = computed(() => !props.error && props.items.length > 0)
+
+const columnHeader = (sortKey?: string): HTMLAttributes => {
+  if (!hasRows.value) return {}
+  const sorted = sortKey && props.sortOptions.parameter === sortKey
+  return {
+    role: 'columnheader',
+    'aria-sort': sorted ? (props.sortOptions.order === 'asc' ? 'ascending' : 'descending') : undefined
+  }
+}
 const listEl = ref<HTMLElement | null>(null)
 
+const isSelectable = (file: AppFile) => file.id !== SHARED_WITH_ME_DIR_ID
+
+/** Replaces the whole selection in one store write, however many rows changed. */
+const setSelection = (ids: ReadonlySet<string>) => {
+  if (sameSet(ids, selectedIds.value)) return
+  emits('set-selection', props.items.filter((file) => ids.has(file.id) && isSelectable(file)))
+}
+
 /**
- * Anchor for shift-click. A plain click sets it; a shift-click fills in
- * everything between it and the clicked row, the way every file manager
- * behaves. Selection still flows out through `select-one`, so the parent
- * stays the single owner of what is checked.
+ * Anchor for shift-click and Shift+Arrow. A plain or Ctrl click moves it; a
+ * shift-click selects everything between it and the clicked row, the way
+ * every file manager behaves.
  */
 const anchorId = ref<string | null>(null)
 
-const selectOneAt = (value: boolean, file: AppFile) => {
+const toggle = (file: AppFile) => {
+  if (!isSelectable(file)) return
   anchorId.value = file.id
-  emits('select-one', value, file)
+  const next = new Set(selectedIds.value)
+  if (!next.delete(file.id)) next.add(file.id)
+  setSelection(next)
 }
 
-const selectRange = (file: AppFile) => {
-  const rows = props.items
-  const to = rows.findIndex((f) => f.id === file.id)
-  if (to < 0) return
+const selectRange = (file: AppFile, additive: boolean) => {
+  const ids = props.items.map((f) => f.id)
+  if (!anchorId.value || !ids.includes(anchorId.value)) anchorId.value = file.id
 
-  const from = anchorId.value ? rows.findIndex((f) => f.id === anchorId.value) : -1
-  if (from < 0) {
-    selectOneAt(true, file)
+  const range = rangeBetween(ids, anchorId.value, file.id)
+  setSelection(additive ? new Set([...selectedIds.value, ...range]) : new Set(range))
+}
+
+let lastPointerType = 'mouse'
+let pressedOnBlank = false
+let pressTarget: Element | null = null
+const trackPress = (event: PointerEvent) => {
+  lastPointerType = event.pointerType
+  pressTarget = event.target instanceof Element ? event.target : null
+  pressedOnBlank = event.target instanceof Element && isBlankSpace(event.target)
+}
+
+/**
+ * Native file-manager click semantics: a click selects just that row (also
+ * collapsing a multi-selection onto it), Ctrl/Cmd toggles, Shift selects the
+ * range from the anchor and Ctrl+Shift adds that range. Touch has no
+ * modifiers, so once anything is selected a tap toggles instead.
+ */
+const onRowClick = (event: MouseEvent | KeyboardEvent, file: AppFile) => {
+  if (props.selectionDisabled) return
+
+  const additive = event.ctrlKey || event.metaKey
+  if (event.shiftKey) {
+    selectRange(file, additive)
     return
   }
 
-  const [start, end] = from <= to ? [from, to] : [to, from]
-  for (let i = start; i <= end; i++) {
-    if (!checkedIds.value.has(rows[i].id)) emits('select-one', true, rows[i])
+  const touchTap =
+    event instanceof MouseEvent &&
+    event.detail > 0 &&
+    lastPointerType !== 'mouse' &&
+    selectedIds.value.size > 0
+  if (additive || touchTap) {
+    toggle(file)
+    return
   }
+
+  anchorId.value = file.id
+  setSelection(new Set(isSelectable(file) ? [file.id] : []))
 }
 
 /**
@@ -123,28 +204,24 @@ const selectRange = (file: AppFile) => {
 const selectRangeByKeyboard = (from: number, to: number) => {
   const rows = props.items
   const anchorIndex =
-    anchorId.value && checkedIds.value.has(rows[from].id)
+    anchorId.value && selectedIds.value.has(rows[from].id)
       ? rows.findIndex((f) => f.id === anchorId.value)
       : -1
   if (anchorIndex < 0) anchorId.value = rows[from].id
 
   const start = anchorIndex >= 0 ? anchorIndex : from
   const [lo, hi] = start <= to ? [start, to] : [to, start]
-  rows.forEach((file, i) => {
-    if (file.id === SHARED_WITH_ME_DIR_ID) return
-    const inRange = i >= lo && i <= hi
-    if (inRange !== checkedIds.value.has(file.id)) emits('select-one', inRange, file)
-  })
+  setSelection(new Set(rows.slice(lo, hi + 1).map((file) => file.id)))
 }
 
 /**
  * Arrow keys walk the row buttons so the browser is operable without a
- * pointer, and Shift+Arrow selects along the way. Enter is the button's own
- * activation and Space is handled on the row, which leaves only the movement
- * to do here.
+ * pointer, and Shift+Arrow selects along the way. Enter (open) and Space
+ * (select) are handled on the row, which leaves only the movement to do here.
  */
 const onListKeydown = (event: KeyboardEvent) => {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+  if (event.altKey || event.ctrlKey || event.metaKey) return
 
   const target = event.target as HTMLElement | null
   if (!target?.hasAttribute('data-row-nav')) return
@@ -157,32 +234,174 @@ const onListKeydown = (event: KeyboardEvent) => {
   event.preventDefault()
   next.focus()
 
-  if (!event.shiftKey || props.hideCheckbox) return
-  const rowIndex = (el: HTMLElement) => props.items.findIndex((f) => f.id === el.dataset.fileId)
+  if (!event.shiftKey || props.selectionDisabled) return
+  const rowIndex = (el: HTMLElement) =>
+    props.items.findIndex((f) => f.id === el.closest<HTMLElement>('[data-file-id]')?.dataset.fileId)
   const from = rowIndex(target)
   const to = rowIndex(next)
   if (from >= 0 && to >= 0) selectRangeByKeyboard(from, to)
 }
 
-const selectAll = () => {
-  if (checked.value) {
-    emits('select-all', props.items, dirId.value)
-  } else {
-    checked.value = true
+const INTERACTIVE =
+  'a, input, textarea, select, [contenteditable], [data-row-actions], button:not([data-row-nav])'
+
+/**
+ * Empty space around the rows: the table's own background, or any ancestor
+ * of the table, which is what a press lands on in the page area below a short
+ * listing. Siblings like the toolbar, breadcrumbs, sidebar and modals are
+ * never ancestors, so they don't count.
+ */
+const isBlankSpace = (target: Element) => {
+  const table = tableEl.value
+  if (!table) return false
+  if (target.contains(table)) return true
+  return (
+    table.contains(target) &&
+    !target.closest('[data-file-id], [data-row-placeholder], [data-table-header]') &&
+    !target.closest(INTERACTIVE)
+  )
+}
+
+const rowAt = (target: Element) => {
+  const row = target.closest<HTMLElement>('[data-file-id]')
+  return row && listEl.value?.contains(row) ? row : null
+}
+
+/**
+ * The one place deciding whether a pointerdown begins a rubber band. Only a
+ * primary mouse press does (touch keeps scrolling), and only on blank space or
+ * on a row that isn't selected yet, never on its ⋮ actions or other controls.
+ * Shift on a row means a range click, which a shaky hand mustn't turn into a
+ * band; Shift+drag from blank space still adds.
+ *
+ * A press on an already-selected row is left alone entirely, not even
+ * preventDefault'd: that is where a native drag of the selection starts.
+ */
+const shouldStartMarquee = (event: PointerEvent): boolean => {
+  if (props.selectionDisabled || event.pointerType !== 'mouse' || event.button !== 0) return false
+  const target = event.target
+  if (!(target instanceof Element)) return false
+  if (isBlankSpace(target)) return true
+
+  const row = rowAt(target)
+  if (!row || event.shiftKey || target.closest(INTERACTIVE)) return false
+  return !selectedIds.value.has(row.dataset.fileId ?? '')
+}
+
+// Rows far off screen render as placeholders; they still take up their place
+// in the list, so the band has to be able to hit them too.
+const marqueeTargets = (): [string, Element][] =>
+  [
+    ...(listEl.value?.querySelectorAll<HTMLElement>('[data-file-id], [data-row-placeholder]') ??
+      [])
+  ].map((el) => [el.dataset.fileId ?? el.dataset.rowPlaceholder ?? '', el])
+
+const { band, cancel: cancelMarquee } = useMarqueeSelection({
+  shouldStart: shouldStartMarquee,
+  targets: marqueeTargets,
+  getSelection: () => selectedIds.value,
+  setSelection,
+  // A following shift-click extends from the row nearest where the band began.
+  onCommit: (hits, selection) => {
+    anchorId.value = hits.find((id) => selection.has(id)) ?? anchorId.value
+  },
+  // The fixed navbar (h-14) covers the top of the viewport.
+  topInset: 56
+})
+
+useLongPress({
+  target: (event) => {
+    if (props.selectionDisabled || !(event.target instanceof Element)) return null
+    if (event.target.closest(INTERACTIVE)) return null
+    return rowAt(event.target)
+  },
+  onLongPress: (row) => {
+    const file = props.items.find((f) => f.id === row.dataset.fileId)
+    if (file) toggle(file)
   }
+})
+
+// Both ends must be blank: a press on one row released on another clicks
+// their common ancestor, the list, which is not a click on nothing.
+const onDocumentClick = (event: MouseEvent) => {
+  if (props.selectionDisabled || !selectedIds.value.size || !pressedOnBlank) return
+  if (event.ctrlKey || event.metaKey || event.shiftKey) return
+  if (event.target instanceof Element && isBlankSpace(event.target)) setSelection(new Set())
+}
+
+const isMenuOpen = () =>
+  [...document.querySelectorAll('[role="menu"], .floating-menu')].some(
+    (el) => el.getClientRects().length > 0
+  )
+
+/**
+ * Escape clears the selection only when nothing else wants the key. Menus and
+ * dialogs are checked in the capture phase, while they are still open: some
+ * close on this same Escape without claiming it. Everything else that acts on
+ * it (the transfers panel) claims it with preventDefault, which can only be
+ * read once the whole dispatch is over.
+ */
+const onEscape = (event: KeyboardEvent) => {
+  if (event.key !== 'Escape') return
+  if (cancelMarquee()) {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+
+  const target = event.target instanceof Element ? event.target : null
+  if (target?.closest('input, textarea, select, [contenteditable]')) return
+  if (!selectedIds.value.size || isDialogOpen() || isMenuOpen()) return
+  setTimeout(() => {
+    if (!event.defaultPrevented) setSelection(new Set())
+  })
 }
 
 const showDeleteAll = computed(() => {
-  return checkedRows.value.length > 0 && !props.hideDelete
+  return selectedRows.value.length > 0 && !props.hideDelete
 })
+
+const { sharingEnabled, forkEnabled } = useCapability()
+
+const singleSelected = computed(() => {
+  if (selectedRows.value.length !== 1) {
+    return null
+  }
+
+  return selectedRows.value[0]
+})
+
+const renameable = computed(() => {
+  const file = singleSelected.value
+  if (!file || !props.showActions) return null
+  const can = fileCapabilities(file, {
+    sharingEnabled: sharingEnabled.value,
+    forkEnabled: forkEnabled.value,
+    hideDelete: props.hideDelete
+  })
+  return can.rename ? file : null
+})
+
+/** Opens a folder, the notes editor or the preview; Details for anything else. */
+const openFile = (file: AppFile) => {
+  const route = fileOpenRoute(file)
+  if (route) router.push(route)
+  else emits('details', file)
+}
+
+const parentRoute = computed(() => parentFolderRoute(props.parents))
+
+// Enter on a focused row is the row's own; this covers a selection made with
+// the mouse or the band, where focus is left on the page itself.
+const isPageFocused = () => !document.activeElement || document.activeElement === document.body
 
 useKeyboardShortcuts([
   // Ctrl+A selects every row in the current folder
   {
     key: 'a',
     mod: true,
-    when: () => !props.hideCheckbox && props.items.length > 0,
-    handler: selectAll
+    when: () => !props.selectionDisabled && props.items.length > 0,
+    handler: () => emits('select-all', props.items, dirId.value)
   },
   {
     key: 'Delete',
@@ -194,22 +413,36 @@ useKeyboardShortcuts([
     mod: true,
     when: () => showDeleteAll.value,
     handler: () => emits('remove-all')
+  },
+  {
+    key: 'F2',
+    when: () => !!renameable.value,
+    handler: () => emits('rename', renameable.value as AppFile)
+  },
+  {
+    key: 'Enter',
+    when: () => !!singleSelected.value && isPageFocused(),
+    handler: () => openFile(singleSelected.value as AppFile)
+  },
+  {
+    key: 'ArrowUp',
+    alt: true,
+    when: () => !!parentRoute.value,
+    handler: () => router.push(parentRoute.value as RouteLocationRaw)
   }
 ])
 
 const showMoveAll = computed(() => {
-  return checkedRows.value.length > 0
+  return selectedRows.value.length > 0
 })
 
-const { sharingEnabled } = useCapability()
-
 const showDownloadMany = computed(() => {
-  const hasIncompleteUploads = checkedRows.value.some(
+  const hasIncompleteUploads = selectedRows.value.some(
     (item) => item.mime !== 'dir' && !item.finished_upload_at
   )
-  const hasSyntheticRoot = checkedRows.value.some((item) => item.id === SHARED_WITH_ME_DIR_ID)
+  const hasSyntheticRoot = selectedRows.value.some((item) => item.id === SHARED_WITH_ME_DIR_ID)
 
-  return checkedRows.value.length > 0 && !hasIncompleteUploads && !hasSyntheticRoot
+  return selectedRows.value.length > 0 && !hasIncompleteUploads && !hasSyntheticRoot
 })
 
 /**
@@ -220,50 +453,10 @@ const showDownloadMany = computed(() => {
  */
 const isSharedWithMeRoot = computed(() => props.parentId === SHARED_WITH_ME_DIR_ID)
 
-/**
- * Directory creation and folder upload work wherever the multi-key
- * create can run: any folder the caller owns, and any folder shared
- * with a write role — the create resolves the authorising member list
- * from the nearest signed ancestor, so depth doesn't matter. Readers
- * keep no write affordances.
- */
-const canCreateDirHere = computed(() => {
-  const d = props.dir
-  if (!d) return true
-  if (d.mime !== 'dir') return false
-  if (d.is_owner !== false) return true
-  return canWriteToShared(d)
-})
+const canCreate = computed(() => canCreateHere(props.dir, props.parentId))
 
-const singleSelected = computed(() => {
-  if (checkedRows.value.length !== 1) {
-    return null
-  }
-
-  return checkedRows.value[0]
-})
-
-watch(
-  () => checkedRows.value,
-  (value) => {
-    if (value.length === 0) {
-      checked.value = false
-    }
-  }
-)
-
-watch(
-  () => checked.value,
-  (value) => {
-    if (value) {
-      emits('select-all', props.items, dirId.value)
-    } else {
-      emits('select-all', [], dirId.value)
-    }
-  }
-)
-
-const hasFiles = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files')
+const hasFiles = (e: DragEvent) =>
+  !!e.dataTransfer?.types.includes('Files') && !isInternalFileDrag(e)
 
 // Modals stay in the DOM behind v-show, so only a rendered one counts as open.
 const isDialogOpen = () =>
@@ -317,22 +510,218 @@ const drop = (e: DragEvent) => {
   }
 }
 
+/**
+ * Dragging a selected row carries the whole selection. Rows only become
+ * draggable once selected, so a press on any other row is the band's.
+ */
+const onDragstart = (event: DragEvent) => {
+  const row = event.target instanceof Element ? rowAt(event.target) : null
+  if (!row || props.selectionDisabled || !selectedIds.value.has(row.dataset.fileId ?? '')) return
+  // A touch long-press on a row toggles its selection; it mustn't also pick it
+  // up. A press in the ⋮ dropdown that wobbles is choosing an item, not a drag.
+  if (lastPointerType === 'touch' || pressTarget?.closest('[data-row-actions]')) {
+    event.preventDefault()
+    return
+  }
+  closeContextMenu({ restoreFocus: false })
+  beginFileDrag(event, selectedRows.value, props.dir, props.parents)
+}
+
+/**
+ * The listing itself stands for the folder being browsed, which matters once
+ * a hover has sprung a folder open mid-drag: the items can then be dropped
+ * anywhere in it. In the folder they came from it refuses them (same parent).
+ */
+const routeFolderId = computed(() => {
+  const id = route.params.file_id
+  return (Array.isArray(id) ? id[0] : id) || undefined
+})
+
+const { isOver: isListingDropTarget, listeners: listingDropListeners } = useFolderDropTarget(
+  () => props.dir ?? undefined,
+  () => props.parents.slice(0, -1),
+  // Until the folder being opened has loaded, a missing `dir` would read as the root.
+  { disabled: () => routeFolderId.value !== props.dir?.id }
+)
+
+const runFileAction = (action: FileMenuAction, file: AppFile) => {
+  switch (action) {
+    case 'open':
+      return openFile(file)
+    case 'move':
+      anchorId.value = file.id
+      setSelection(new Set([file.id]))
+      return emits('move-all')
+    case 'download':
+      return emits('download', file)
+    case 'rename':
+      return emits('rename', file)
+    case 'sharing':
+      return emits('sharing', file)
+    case 'details':
+      return emits('details', file)
+    case 'fork':
+      return emits('fork', file)
+    case 'leave':
+      return emits('leave', file)
+    case 'remove':
+      return emits('remove', file)
+  }
+}
+
+const runSelectionAction = (action: SelectionMenuAction) => {
+  switch (action) {
+    case 'download-many':
+      return emits('download-many')
+    case 'move-all':
+      return emits('move-all')
+    case 'remove-all':
+      return emits('remove-all')
+  }
+}
+
+const runBlankAction = (action: BlankMenuAction) => {
+  switch (action) {
+    case 'directory':
+      return emits('directory')
+    case 'file':
+      return emits('file')
+    case 'browse':
+      return emits('browse')
+    case 'browse-folder':
+      return emits('browse-folder')
+    case 'select-all':
+      return emits('select-all', props.items, dirId.value)
+  }
+}
+
+/**
+ * Right-clicking a row that is part of a multi-selection acts on all of it;
+ * any other row becomes the selection first, as in native file managers.
+ */
+/**
+ * Opens at the pointer, or for a menu raised from the keyboard, next to
+ * `anchor` when given (the event's own target otherwise).
+ */
+const openMenu = <A extends string>(
+  event: MouseEvent,
+  request: Omit<ContextMenuRequest<A>, 'x' | 'y'>,
+  anchor?: Element | null
+) => {
+  if (!anchor) return openContextMenuFromEvent(event, request)
+  const rect = anchor.getBoundingClientRect()
+  const opened = openContextMenu({
+    anchor,
+    ...request,
+    x: rect.left + Math.min(rect.width / 2, 24),
+    y: rect.top + rect.height / 2
+  })
+  if (opened) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+  return opened
+}
+
+const openRowMenu = (event: MouseEvent, file: AppFile, anchor?: Element | null) => {
+  if (!props.selectionDisabled && selectedIds.value.has(file.id) && selectedRows.value.length > 1) {
+    openMenu<SelectionMenuAction>(
+      event,
+      {
+        items: selectionMenuItems(selectedRows.value, { t, hideDelete: props.hideDelete }),
+        label: t('files.browser.selectedCount', { count: selectedRows.value.length }),
+        onSelect: (item) => item.action && runSelectionAction(item.action)
+      },
+      anchor
+    )
+    return
+  }
+
+  if (!props.selectionDisabled) {
+    anchorId.value = file.id
+    setSelection(new Set(isSelectable(file) ? [file.id] : []))
+  }
+  openMenu<FileMenuAction>(event, {
+    items: fileMenuItems(file, {
+      t,
+      sharingEnabled: sharingEnabled.value,
+      forkEnabled: forkEnabled.value,
+      hideDelete: props.hideDelete
+    }),
+    label: file.name,
+    onSelect: (item) => item.action && runFileAction(item.action, file)
+  }, anchor)
+}
+
+// Like a click on nothing, a right-click there drops the selection.
+const openBlankMenu = (event: MouseEvent) => {
+  if (!props.selectionDisabled) setSelection(new Set())
+  openContextMenuFromEvent<BlankMenuAction>(event, {
+    items: blankMenuItems({
+      t,
+      parentId: props.parentId,
+      dir: props.dir,
+      canSelectAll: !props.selectionDisabled && props.items.some(isSelectable)
+    }),
+    label: props.dir?.name || t('files.browser.fileList'),
+    onSelect: (item) => item.action && runBlankAction(item.action)
+  })
+}
+
+// The Menu key and Shift+F10 raise a contextmenu with no pointer position.
+const isKeyboardRaised = (event: MouseEvent) => !event.clientX && !event.clientY
+
+/**
+ * Bound on the document so the page area below a short listing counts, the
+ * same blank space a click clears the selection on. A touch long-press has
+ * already claimed the event (it selects instead), and so has an open menu.
+ */
+const onContextMenu = (event: MouseEvent) => {
+  if (event.defaultPrevented || !props.showActions || isDialogOpen()) return
+  const target = event.target instanceof Element ? event.target : null
+  if (!target) return
+
+  const row = rowAt(target)
+  if (row) {
+    if (target.closest('.floating-menu')) return
+    const file = props.items.find((f) => f.id === row.dataset.fileId)
+    if (file) openRowMenu(event, file)
+  } else if (isBlankSpace(target)) {
+    if (isKeyboardRaised(event) && selectedRows.value.length) {
+      // The Menu key with focus on the page (after a band or a blank click)
+      // means the selection, as in native file managers, not empty space.
+      const first = selectedRows.value[0]
+      const anchor = listEl.value?.querySelector(`[data-file-id="${CSS.escape(first.id)}"]`)
+      openRowMenu(event, first, anchor ?? tableEl.value)
+    } else {
+      openBlankMenu(event)
+    }
+  }
+}
+
 onMounted(() => {
   window.addEventListener('dragover', dragover)
   window.addEventListener('dragleave', dragleave)
   window.addEventListener('drop', drop)
+  document.addEventListener('pointerdown', trackPress, true)
+  document.addEventListener('click', onDocumentClick)
+  window.addEventListener('keydown', onEscape, true)
+  document.addEventListener('contextmenu', onContextMenu)
 })
 onUnmounted(() => {
   window.removeEventListener('dragover', dragover)
   window.removeEventListener('dragleave', dragleave)
   window.removeEventListener('drop', drop)
+  document.removeEventListener('pointerdown', trackPress, true)
+  document.removeEventListener('click', onDocumentClick)
+  window.removeEventListener('keydown', onEscape, true)
+  document.removeEventListener('contextmenu', onContextMenu)
 })
 
 const borderClass = 'sm:border-l sm:border-paper-300 sm:dark:border-brownish-950'
 
 const sizes = {
-  checkbox: 'pl-2 pt-3 w-10 shrink-0',
-  name: 'flex-1 p-2 pt-3 min-w-0 flex',
+  name: 'flex-1 p-2 pt-3 pl-3 min-w-0 flex',
   size: 'hidden p-2 pt-3 md:block w-28 shrink-0',
   type: 'hidden p-2 pt-3 xl:block w-24 shrink-0',
   modifiedAt: 'hidden p-2 pt-3 sm:block w-52 shrink-0',
@@ -342,14 +731,14 @@ const sizes = {
 
 <template>
   <div
-    class="w-full p-2 mb-2 flex rounded-t-md bg-paper-100 dark:bg-brownish-900 gap-4"
+    class="w-full min-h-[3.125rem] p-2 mb-2 flex items-center overflow-x-auto rounded-t-md bg-paper-100 dark:bg-brownish-900 gap-4"
     v-if="showActions"
   >
     <span
-      v-if="checkedRows.length"
+      v-if="selectedRows.length"
       data-testid="files-selected-count"
-      class="self-center text-sm text-brownish-700 dark:text-brownish-50"
-    >{{ $t('files.browser.selectedCount', { count: checkedRows.length }) }}</span>
+      class="self-center shrink-0 whitespace-nowrap text-sm text-brownish-700 dark:text-brownish-50"
+    >{{ $t('files.browser.selectedCount', { count: selectedRows.length }) }}</span>
 
     <BaseButton
       :title="$t('files.delete.trashLabel')"
@@ -434,63 +823,71 @@ const sizes = {
       @click="() => emits('sharing', singleSelected as AppFile)"
     />
 
-    <BaseButton
-      name="create-dir"
-      :title="$t('files.browser.createDirectory')"
-      :iconSize="20"
-      :xs="true"
-      :icon="mdiFolderPlusOutline"
-      color="light"
-      @click="emits('directory')"
-      v-if="!checkedRows.length && !isSharedWithMeRoot && canCreateDirHere"
-    />
+    <!-- Selection actions sit on the left, create and upload on the right.
+         The bar keeps one height whatever it holds: if selecting a row grew
+         it, the listing would jump under a double click between its clicks. -->
+    <div v-if="canCreate" class="ml-auto flex shrink-0 gap-4">
+      <BaseButton
+        name="create-dir"
+        :title="$t('files.browser.createDirectory')"
+        :iconSize="20"
+        :xs="true"
+        :icon="mdiFolderPlusOutline"
+        color="light"
+        @click="emits('directory')"
+      />
 
-    <BaseButton
-      name="create-file"
-      :title="$t('files.browser.newFile')"
-      :iconSize="20"
-      :xs="true"
-      :icon="mdiFileDocumentPlusOutline"
-      color="light"
-      @click="emits('file')"
-      v-if="!checkedRows.length && !isSharedWithMeRoot"
-    />
+      <BaseButton
+        name="create-file"
+        :title="$t('files.browser.newFile')"
+        :iconSize="20"
+        :xs="true"
+        :icon="mdiFileDocumentPlusOutline"
+        color="light"
+        @click="emits('file')"
+      />
 
-    <BaseButton
-      name="browse"
-      :title="$t('files.browser.uploadFiles')"
-      :iconSize="20"
-      :xs="true"
-      :icon="mdiFilePlusOutline"
-      color="light"
-      @click="emits('browse')"
-      v-if="!checkedRows.length && !isSharedWithMeRoot"
-    />
+      <BaseButton
+        name="browse"
+        :title="$t('files.browser.uploadFiles')"
+        :iconSize="20"
+        :xs="true"
+        :icon="mdiFilePlusOutline"
+        color="light"
+        @click="emits('browse')"
+      />
 
-    <BaseButton
-      name="browse-folder"
-      :title="$t('files.browser.uploadFolder')"
-      :iconSize="20"
-      :xs="true"
-      :icon="mdiFolderArrowUpOutline"
-      color="light"
-      @click="emits('browse-folder')"
-      v-if="!checkedRows.length && !isSharedWithMeRoot && canCreateDirHere"
-    />
+      <BaseButton
+        name="browse-folder"
+        :title="$t('files.browser.uploadFolder')"
+        :iconSize="20"
+        :xs="true"
+        :icon="mdiFolderArrowUpOutline"
+        color="light"
+        @click="emits('browse-folder')"
+      />
+    </div>
   </div>
 
   <div
+    ref="tableEl"
+    :role="hasRows ? 'grid' : undefined"
+    :aria-label="hasRows ? $t('files.browser.fileList') : undefined"
+    :aria-multiselectable="hasRows && !props.selectionDisabled ? true : undefined"
     :class="{
-      'border-2 border-redish-300 border-spacing-0 m-[-2px]': isDropZone
+      'border-2 border-redish-300 border-spacing-0 m-[-2px]': isDropZone,
+      'outline outline-2 outline-orangy-500': isListingDropTarget
     }"
+    :data-drop-over="isListingDropTarget ? 'true' : undefined"
     class="bg-white dark:bg-brownish-900 rounded-lg border border-paper-300/40 dark:border-brownish-700/40"
+    v-on="listingDropListeners"
   >
-    <div class="w-full flex rounded-t-lg bg-paper-100 dark:bg-brownish-950 border-b border-paper-300 dark:border-brownish-700/40">
-      <div :class="sizes.checkbox">
-        <TableCheckboxCell v-model="checked" v-if="!props.hideCheckbox" :label="$t('common.selectAll')" />
-      </div>
-
-      <div :class="`${sizes.name}`">
+    <div
+      data-table-header
+      :role="hasRows ? 'row' : undefined"
+      class="w-full flex rounded-t-lg bg-paper-100 dark:bg-brownish-950 border-b border-paper-300 dark:border-brownish-700/40"
+    >
+      <div :class="`${sizes.name}`" v-bind="columnHeader('name')">
         <SortableName
           name="name"
           :label="$t('common.name')"
@@ -499,7 +896,7 @@ const sizes = {
         />
       </div>
 
-      <div :class="`${sizes.size} ${borderClass}`">
+      <div :class="`${sizes.size} ${borderClass}`" v-bind="columnHeader('size')">
         <SortableName
           name="size"
           :label="$t('common.size')"
@@ -508,7 +905,7 @@ const sizes = {
         />
       </div>
 
-      <div :class="`${sizes.type} ${borderClass}`">
+      <div :class="`${sizes.type} ${borderClass}`" v-bind="columnHeader('mime')">
         <SortableName
           name="mime"
           :label="$t('common.type')"
@@ -517,7 +914,7 @@ const sizes = {
         />
       </div>
 
-      <div :class="`${sizes.modifiedAt} ${borderClass}`">
+      <div :class="`${sizes.modifiedAt} ${borderClass}`" v-bind="columnHeader('file_modified_at')">
         <SortableName
           name="file_modified_at"
           :label="$t('common.modified')"
@@ -526,7 +923,9 @@ const sizes = {
         />
       </div>
 
-      <div :class="`${sizes.buttons}`"></div>
+      <div :class="`${sizes.buttons}`" v-bind="columnHeader()">
+        <span v-if="hasRows" class="sr-only">{{ $t('common.actions') }}</span>
+      </div>
     </div>
 
     <div
@@ -556,9 +955,6 @@ const sizes = {
         class="w-full flex file-row-separator animate-pulse"
         aria-hidden="true"
       >
-        <div :class="sizes.checkbox">
-          <div class="w-5 h-5 rounded bg-paper-200 dark:bg-brownish-700" />
-        </div>
         <div :class="sizes.name">
           <div class="w-6 h-6 mr-2 rounded-md shrink-0 bg-paper-200 dark:bg-brownish-700" />
           <div class="h-4 rounded bg-paper-200 dark:bg-brownish-700" :class="width" />
@@ -587,18 +983,26 @@ const sizes = {
         {{ $t('files.browser.emptyFolderHint') }}
       </span>
     </div>
-    <div v-else ref="listEl" class="flex flex-col rounded-b-lg" @keydown="onListKeydown">
+    <div
+      v-else
+      ref="listEl"
+      role="rowgroup"
+      class="flex flex-col rounded-b-lg"
+      @keydown="onListKeydown"
+      @dragstart="onDragstart"
+      @dragend="endFileDrag"
+    >
       <template v-for="file in props.items" :key="file.id">
         <TableFileRowWatcher
           :file="file"
           :sizes="sizes"
-          :checkedIds="checkedIds"
-          :hideCheckbox="props.hideCheckbox"
+          :selected="selectedIds.has(file.id)"
+          :selectionDisabled="props.selectionDisabled"
           :hideDelete="props.hideDelete"
           :share="props.share"
           :highlighted="props.searchedFileId === file.id"
+          :ancestors="props.parents"
           @actions="(f: AppFile) => emits('actions', f)"
-          @deselect-all="emits('deselect-all')"
           @details="(f: AppFile) => emits('details', f)"
           @download="(f: AppFile) => emits('download', f)"
           @remove="(f: AppFile) => emits('remove', f)"
@@ -606,11 +1010,25 @@ const sizes = {
           @sharing="(f: AppFile) => emits('sharing', f)"
           @fork="(f: AppFile) => emits('fork', f)"
           @leave="(f: AppFile) => emits('leave', f)"
-          @select-one="selectOneAt"
-          @select-range="selectRange"
+          @row-click="onRowClick"
           @upload-many="(f: FileList, d?: string) => emits('upload-many', f, d)"
         />
       </template>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="band"
+      data-testid="selection-marquee"
+      aria-hidden="true"
+      class="fixed z-20 pointer-events-none rounded-sm border border-orangy-600 bg-orangy-500/20"
+      :style="{
+        left: `${band.left}px`,
+        top: `${band.top}px`,
+        width: `${band.right - band.left}px`,
+        height: `${band.bottom - band.top}px`
+      }"
+    />
+  </Teleport>
 </template>

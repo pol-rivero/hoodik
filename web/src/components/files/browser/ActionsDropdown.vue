@@ -4,7 +4,8 @@ import { mdiDotsVertical } from '@mdi/js'
 import ActionsButtons from './ActionsButtons.vue'
 import BaseButton from '@/components/ui/BaseButton.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
-import { ref, computed } from 'vue'
+import { closeContextMenu, useContextMenu } from '@/composables/useContextMenu'
+import { ref, computed, watch } from 'vue'
 import { vOnClickOutside } from '@vueuse/components'
 
 const props = defineProps<{
@@ -100,6 +101,8 @@ const open = (event: MouseEvent) => {
     return
   }
 
+  closeContextMenu({ restoreFocus: false })
+
   if (!menuWidth.value || !menuHeight.value) {
     menu.value.style.visibility = 'hidden'
     menu.value.style.display = 'block'
@@ -132,6 +135,12 @@ const open = (event: MouseEvent) => {
 
   menu.value.style.display = 'block'
 }
+
+// One menu at a time: a right-click elsewhere doesn't count as a click outside.
+const { isOpen: isContextMenuOpen } = useContextMenu()
+watch(isContextMenuOpen, (open) => {
+  if (open) close()
+})
 
 useKeyboardShortcuts([
   { key: 'Escape', inEditable: true, inDialog: true, preventDefault: false, handler: close }

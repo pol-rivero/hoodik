@@ -539,11 +539,18 @@
       "createDirectory": "Create folder",
       "emptyFolder": "This folder is empty",
       "emptyFolderHint": "Drop files here or use the upload button to add some",
+      "fileList": "Files",
       "newFile": "New file",
       "renameTitle": "Rename file or folder",
       "selectedCount": "{count} selected",
       "uploadFiles": "Upload files",
       "uploadFolder": "Upload folder"
+    },
+    "contextMenu": {
+      "downloadZip": "Download as ZIP",
+      "move": "Move to…",
+      "shortcutDelete": "Del",
+      "shortcutSelectAll": "Ctrl+A"
     },
     "createDirectory": {
       "nameLabel": "Folder name",
@@ -567,6 +574,14 @@
     },
     "details": {
       "uploaded": "Uploaded"
+    },
+    "dragMove": {
+      "busy": "Another move is still in progress.",
+      "itemCount": "{count} item | {count} items",
+      "moved": "Moved {count} item to {folder} | Moved {count} items to {folder}",
+      "partial": "Moved {moved} of {total} items to {folder}. The rest stayed where they were.",
+      "shareFilesMessage": "Moving '{name}' into '{destination}' will share it with {members}. | Moving {count} files into '{destination}' will share them with {members}.",
+      "shareFilesTitle": "Move and share?"
     },
     "move": {
       "home": "Home",
