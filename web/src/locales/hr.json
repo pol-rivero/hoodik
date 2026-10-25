@@ -755,14 +755,15 @@
     },
     "menu": {
       "account": "Račun",
+      "adminSettings": "Admin: Postavke",
+      "adminUsers": "Admin: Korisnici",
       "files": "Datoteke",
       "help": "Pomoć",
       "lock": "Zaključaj",
       "notes": "Bilješke",
       "share": "Dijeljenje",
       "theme": "Tema",
-      "trash": "Smeće",
-      "users": "Korisnici"
+      "trash": "Smeće"
     },
     "title": {
       "accountLocked": "Račun zaključan",
@@ -1224,8 +1225,7 @@
   },
   "ui": {
     "aside": {
-      "collapse": "Sakrij bočnu traku",
-      "getApps": "Preuzmi aplikacije"
+      "collapse": "Sakrij bočnu traku"
     },
     "fileTree": {
       "empty": "Prazno",

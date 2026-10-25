@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { randomEmail, randomPassword, createUser } from './helpers/auth'
+import { randomEmail, randomPassword, createUser, openAccountMenuItem } from './helpers/auth'
 
 /**
  * A failed request must always tell the user something. These drive real
@@ -10,7 +10,7 @@ import { randomEmail, randomPassword, createUser } from './helpers/auth'
 test.describe('Error visibility', () => {
   test('a failed account preference toggle shows a toast', async ({ page }) => {
     await createUser(page, randomEmail(), randomPassword())
-    await page.locator('aside').getByText('Account', { exact: true }).first().click()
+    await openAccountMenuItem(page, 'account')
 
     const toggle = page.getByTestId('account-share-notifications-toggle')
     await toggle.waitFor()

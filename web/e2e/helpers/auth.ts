@@ -63,9 +63,20 @@ export async function createUser(page: Page, email: string, password: string) {
  * Waits for redirect to the login page.
  */
 export async function logout(page: Page) {
-  // Logout is rendered as a sidebar button (not an <a> link)
-  await page.locator('button:has-text("Logout"), a:has-text("Logout")').first().click()
+  await openAccountMenuItem(page, 'logout')
   await page.waitForURL('**/auth/login')
+}
+
+/**
+ * Pick an entry from the account dropdown in the top bar. Navigates in-SPA,
+ * which keeps the in-memory decrypted key that a full reload would drop.
+ */
+export async function openAccountMenuItem(
+  page: Page,
+  item: 'account' | 'users' | 'settings' | 'lock' | 'logout'
+) {
+  await page.getByTestId('account-menu').click()
+  await page.getByTestId(`account-menu-${item}`).click()
 }
 
 /**

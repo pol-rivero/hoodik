@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { mdiClose, mdiDotsVertical } from '@mdi/js'
 import { containerMaxW } from '@/config.js'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
@@ -8,6 +9,8 @@ import NavBarMenuList from '@/components/ui/NavBarMenuList.vue'
 import NavBarItemPlain from '@/components/ui/NavBarItemPlain.vue'
 import type { NavBarItem } from '@/menuNavBar'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
+import { store as loginStore } from '!/auth/login'
+import { store as cryptoStore } from '!/crypto'
 
 defineProps({
   menu: {
@@ -25,14 +28,28 @@ defineOptions({ inheritAttrs: false })
 const emit = defineEmits(['menu-click'])
 
 const helpOpen = ref(false)
+const router = useRouter()
+const login = loginStore()
+const crypto = cryptoStore()
 
-// Help lives here rather than in each layout so both the authenticated and
-// admin shells get the same entry and the same shortcut without duplicating it.
-const menuClick = (event: Event, item: NavBarItem) => {
+// Help and logout live here rather than in each layout so both the
+// authenticated and admin shells get the same entries without duplicating them.
+const menuClick = async (event: Event, item: NavBarItem) => {
   if (item.isHelp) {
     helpOpen.value = true
     isMenuNavBarActive.value = false
     return
+  }
+
+  if (item.isLogout) {
+    isMenuNavBarActive.value = false
+    await login.logout(crypto, true)
+    router.push({ name: 'login' })
+    return
+  }
+
+  if (item.to) {
+    isMenuNavBarActive.value = false
   }
 
   emit('menu-click', event, item)

@@ -755,14 +755,15 @@
     },
     "menu": {
       "account": "Account",
+      "adminSettings": "Admin: Settings",
+      "adminUsers": "Admin: Users",
       "files": "Files",
       "help": "Help",
       "lock": "Lock",
       "notes": "Notes",
       "share": "Sharing",
       "theme": "Theme",
-      "trash": "Trash",
-      "users": "Users"
+      "trash": "Trash"
     },
     "title": {
       "accountLocked": "Account Locked",
@@ -1224,8 +1225,7 @@
   },
   "ui": {
     "aside": {
-      "collapse": "Collapse sidebar",
-      "getApps": "Get the apps"
+      "collapse": "Collapse sidebar"
     },
     "fileTree": {
       "empty": "Empty",

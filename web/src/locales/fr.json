@@ -755,14 +755,15 @@
     },
     "menu": {
       "account": "Compte",
+      "adminSettings": "Admin : Paramètres",
+      "adminUsers": "Admin : Utilisateurs",
       "files": "Fichiers",
       "help": "Aide",
       "lock": "Verrouiller",
       "notes": "Notes",
       "share": "Partage",
       "theme": "Thème",
-      "trash": "Corbeille",
-      "users": "Utilisateurs"
+      "trash": "Corbeille"
     },
     "title": {
       "accountLocked": "Compte verrouillé",
@@ -1224,8 +1225,7 @@
   },
   "ui": {
     "aside": {
-      "collapse": "Réduire la barre latérale",
-      "getApps": "Obtenir les applications"
+      "collapse": "Réduire la barre latérale"
     },
     "fileTree": {
       "empty": "Vide",

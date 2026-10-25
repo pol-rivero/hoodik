@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { mdiClose, mdiLogout, mdiCellphoneLink } from '@mdi/js'
+import { mdiClose } from '@mdi/js'
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { store as style } from '!/style'
-import { store as login } from '!/auth/login'
 import { store as crypto } from '!/crypto'
 import AsideMenuList from '@/components/ui/AsideMenuList.vue'
-import AsideMenuItem from '@/components/ui/AsideMenuItem.vue'
 import AsideFileTree from '@/components/ui/AsideFileTree.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import type { AsideMenuItemType } from '@/menuAside'
@@ -17,10 +14,8 @@ const props = defineProps<{
   menu: AsideMenuItemType[]
 }>()
 
-const loginStore = login()
 const cryptoStore = crypto()
 const router = useRouter()
-const { t } = useI18n()
 
 const EXPANDED_KEY = 'hoodik:sidebar:expandedKey'
 const expandedKey = ref<string | null>(sessionStorage.getItem(EXPANDED_KEY))
@@ -58,26 +53,6 @@ function toggleExpand(item: AsideMenuItemType) {
 const emit = defineEmits(['menu-click', 'aside-lg-close-click'])
 const styleStore = style()
 
-// Signing out is not the primary action on any screen, so it reads as a
-// destructive list item — a seam, crimson text, neutral hover — rather than a
-// solid crimson bar competing with whatever the view is actually for. The rail
-// is charcoal in both themes, so these steps are unconditional.
-const lockAccountItem = computed(() => ({
-  label: t('common.logout'),
-  icon: mdiLogout,
-  class:
-    'border-t border-brownish-600 text-redish-100 hover:bg-brownish-700/50 hover:text-white',
-  isLogout: true
-}))
-
-const getAppsItem = computed(() => ({
-  label: t('ui.aside.getApps'),
-  icon: mdiCellphoneLink,
-  href: 'https://hoodik.io/apps?utm_source=hoodik-server',
-  target: '_blank',
-  rel: 'noopener noreferrer'
-}))
-
 const name = computed(() => import.meta.env.APP_NAME || 'Hoodik')
 const version = computed(() => import.meta.env.APP_VERSION || '')
 
@@ -87,11 +62,6 @@ const menuClick = (event: Event, item: object) => {
 
 const asideLgCloseClick = (event: Event) => {
   emit('aside-lg-close-click', event)
-}
-
-const logoutAction = async () => {
-  await loginStore.logout(cryptoStore, true)
-  router.push({ name: 'login' })
 }
 </script>
 
@@ -135,10 +105,8 @@ const logoutAction = async () => {
         </template>
       </div>
 
-      <ul>
-        <AsideMenuItem :item="getAppsItem" />
+      <ul class="pt-3">
         <StatsLi />
-        <AsideMenuItem :item="lockAccountItem" @menu-click="logoutAction" />
       </ul>
 
       <div></div>

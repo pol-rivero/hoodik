@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { randomEmail, randomPassword, createUser, loginAsUser, logout } from './helpers/auth'
+import {
+  randomEmail,
+  randomPassword,
+  createUser,
+  loginAsUser,
+  logout,
+  openAccountMenuItem
+} from './helpers/auth'
 
 /**
  * The QR code is what a user points a phone at to set the mobile app up. Its
@@ -41,7 +48,7 @@ test.describe('Connect a device', () => {
   test('the account page keeps the code for later', async ({ page }) => {
     await createUser(page, randomEmail(), randomPassword())
 
-    await page.locator('aside').getByText('Account', { exact: true }).first().click()
+    await openAccountMenuItem(page, 'account')
 
     const qr = page.getByTestId('account-connect-qr')
     await expect(qr).toBeVisible()

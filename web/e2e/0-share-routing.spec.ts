@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { createUser, loginAsUser, randomEmail, randomPassword } from './helpers/auth'
+import { createUser, loginAsUser, logout, randomEmail, randomPassword } from './helpers/auth'
 
 test.describe('Share routing', () => {
   test('/links/foo redirects to /share/public/foo', async ({ page }) => {
@@ -24,8 +24,7 @@ test.describe('Share routing', () => {
     // are coherent — createUser leaves the user on `/` but a subsequent
     // SPA reload depends on the refresh-cookie path that flakes for some
     // routes when the user just registered.
-    await page.locator('button:has-text("Logout"), a:has-text("Logout")').first().click()
-    await page.waitForURL('**/auth/login')
+    await logout(page)
     await loginAsUser(page, user.email, user.password)
     await page.locator('aside').waitFor({ state: 'visible', timeout: 10_000 })
     await expect(page.locator('aside :text-is("Sharing")').first()).toBeVisible()
@@ -36,8 +35,7 @@ test.describe('Share routing', () => {
     // The dismissible "account-to-account sharing" intro
     // was removed; release notes carry product education now.
     const user = await createUser(page, randomEmail(), randomPassword())
-    await page.locator('button:has-text("Logout"), a:has-text("Logout")').first().click()
-    await page.waitForURL('**/auth/login')
+    await logout(page)
     await loginAsUser(page, user.email, user.password)
     await page.locator('aside').locator(':text-is("Sharing")').first().click()
     await page.waitForURL(/\/share/, { timeout: 15_000 })

@@ -1,4 +1,13 @@
-import { mdiHelpCircleOutline, mdiLock, mdiThemeLightDark } from '@mdi/js'
+import {
+  mdiAccountCircle,
+  mdiCog,
+  mdiHelpCircleOutline,
+  mdiHuman,
+  mdiHumanMaleFemale,
+  mdiLock,
+  mdiLogout,
+  mdiThemeLightDark
+} from '@mdi/js'
 import type { RouteLocation } from 'vue-router'
 import { i18n } from '@/i18n'
 
@@ -15,6 +24,7 @@ export interface NavBarItem {
   isUpload?: boolean
   isCreateDirectory?: boolean
   menu?: NavBarItem[]
+  roles?: string[]
   [key: string]: any
 }
 
@@ -34,9 +44,45 @@ export default [
     testid: 'theme-toggle'
   },
   {
-    icon: mdiLock,
-    label: i18n.global.t('nav.menu.lock'),
+    icon: mdiAccountCircle,
+    label: i18n.global.t('nav.menu.account'),
+    isCurrentUser: true,
     isDesktopNoLabel: true,
-    to: { name: 'lock' }
+    testid: 'account-menu',
+    menu: [
+      {
+        icon: mdiHuman,
+        label: i18n.global.t('nav.menu.account'),
+        to: { name: 'account' },
+        testid: 'account-menu-account'
+      },
+      {
+        icon: mdiHumanMaleFemale,
+        label: i18n.global.t('nav.menu.adminUsers'),
+        to: { name: 'manage-users' },
+        roles: ['admin'],
+        testid: 'account-menu-users'
+      },
+      {
+        icon: mdiCog,
+        label: i18n.global.t('nav.menu.adminSettings'),
+        to: { name: 'manage-settings' },
+        roles: ['admin'],
+        testid: 'account-menu-settings'
+      },
+      { isDivider: true },
+      {
+        icon: mdiLock,
+        label: i18n.global.t('nav.menu.lock'),
+        to: { name: 'lock' },
+        testid: 'account-menu-lock'
+      },
+      {
+        icon: mdiLogout,
+        label: i18n.global.t('common.logout'),
+        isLogout: true,
+        testid: 'account-menu-logout'
+      }
+    ]
   }
 ] as NavBarItem[]

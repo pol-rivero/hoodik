@@ -71,6 +71,10 @@ const itemLabel = computed(() =>
 const isDropdownActive = ref(false)
 
 const menuClick = (event: Event) => {
+  if (props.item.menu && event instanceof KeyboardEvent) {
+    event.preventDefault()
+  }
+
   emit('menu-click', event, props.item)
 
   if (props.item.menu) {
@@ -119,7 +123,13 @@ onBeforeUnmount(() => {
     v-bind="linkAttrs"
     :data-testid="item.testid"
     :title="item.label"
+    :tabindex="item.menu ? 0 : undefined"
+    :role="item.menu ? 'button' : undefined"
+    :aria-haspopup="item.menu ? 'menu' : undefined"
+    :aria-expanded="item.menu ? isDropdownActive : undefined"
     @click="menuClick"
+    @keydown.enter.self="item.menu && menuClick($event)"
+    @keydown.space.self="item.menu && menuClick($event)"
   >
     <div
       class="flex items-center"
@@ -135,15 +145,21 @@ onBeforeUnmount(() => {
         >{{ itemLabel }}</span
       >
       <BaseIcon
-        v-if="item.menu"
+        v-if="item.menu && !item.isDesktopNoLabel"
         :path="isDropdownActive ? mdiMinus : mdiPlus"
         class="hidden lg:inline-flex transition-colors"
       />
     </div>
+    <!-- Clicks inside the dropdown must not bubble to the toggle above, or
+         picking an entry would close the dropdown and immediately reopen it. -->
     <div
       v-if="item.menu"
-      class="text-sm border-b border-paper-200 lg:border lg:bg-white lg:absolute lg:top-full lg:left-0 lg:min-w-full lg:z-20 lg:rounded-lg lg:shadow-lg lg:dark:bg-brownish-800 dark:border-brownish-700"
-      :class="{ 'lg:hidden': !isDropdownActive }"
+      class="text-sm border-b border-paper-200 lg:border lg:bg-white lg:absolute lg:top-full lg:min-w-full lg:whitespace-nowrap lg:z-20 lg:rounded-lg lg:shadow-lg lg:dark:bg-brownish-800 dark:border-brownish-700"
+      :class="[
+        item.isDesktopNoLabel ? 'lg:right-0' : 'lg:left-0',
+        { 'lg:hidden': !isDropdownActive }
+      ]"
+      @click.stop
     >
       <NavBarMenuList :menu="item.menu" @menu-click="menuClickDropdown" />
     </div>

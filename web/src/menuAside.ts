@@ -1,9 +1,6 @@
 import {
   mdiMonitor,
   mdiShareVariantOutline,
-  mdiHuman,
-  mdiHumanMaleFemale,
-  mdiCog,
   mdiFileDocumentOutline,
   mdiTrashCanOutline
 } from '@mdi/js'
@@ -39,22 +36,5 @@ export default [
     to: { name: 'share' },
     icon: mdiShareVariantOutline,
     label: i18n.global.t('nav.menu.share')
-  },
-  {
-    to: { name: 'account' },
-    icon: mdiHuman,
-    label: i18n.global.t('nav.menu.account')
-  },
-  {
-    to: { name: 'manage-users' },
-    icon: mdiHumanMaleFemale,
-    label: i18n.global.t('nav.menu.users'),
-    roles: ['admin']
-  },
-  {
-    to: { name: 'manage-settings' },
-    icon: mdiCog,
-    label: i18n.global.t('common.settings'),
-    roles: ['admin']
   }
 ] as AsideMenuItemType[]

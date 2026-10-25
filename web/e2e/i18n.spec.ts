@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { randomEmail, randomPassword, createUser } from './helpers/auth'
+import { randomEmail, randomPassword, createUser, openAccountMenuItem } from './helpers/auth'
 
 const messages = (locale: string) =>
   JSON.parse(readFileSync(join(__dirname, `../src/locales/${locale}.json`), 'utf-8'))
@@ -32,10 +32,10 @@ test.describe('Localization', () => {
     const password = randomPassword()
     await createUser(page, email, password)
 
-    // Reach the account view through the in-app sidebar rather than a hard
+    // Reach the account view through the in-app account menu rather than a hard
     // page.goto — a full reload would drop the in-memory decrypted key and
     // bounce the authenticated view back to login.
-    await page.locator('aside').getByText('Account', { exact: true }).first().click()
+    await openAccountMenuItem(page, 'account')
     await page.waitForURL(/\/account(\/|$|\?)/)
 
     const select = page.getByTestId('account-language-select')

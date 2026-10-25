@@ -8,6 +8,7 @@ import {
   loginWithTwoFactor,
   loginWithPrivateKey,
   logout,
+  openAccountMenuItem,
 } from './helpers/auth'
 
 test.describe('Registration', () => {
@@ -140,7 +141,7 @@ test.describe('Lock screen', () => {
     await createUser(page, email, password)
 
     // First visit to the lock route without a stored pin walks through setup
-    await page.locator('nav a[href*="/auth/pin/lock"]').click()
+    await openAccountMenuItem(page, 'lock')
     await page.waitForURL('**/auth/pin/setup-lock-screen')
     await page.locator('#password').fill('1234')
     await page.locator('#confirm_password').fill('1234')

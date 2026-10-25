@@ -755,14 +755,15 @@
     },
     "menu": {
       "account": "Konto",
+      "adminSettings": "Admin: Einstellungen",
+      "adminUsers": "Admin: Benutzer",
       "files": "Dateien",
       "help": "Hilfe",
       "lock": "Sperren",
       "notes": "Notizen",
       "share": "Freigabe",
       "theme": "Darstellung",
-      "trash": "Papierkorb",
-      "users": "Benutzer"
+      "trash": "Papierkorb"
     },
     "title": {
       "accountLocked": "Konto gesperrt",
@@ -1224,8 +1225,7 @@
   },
   "ui": {
     "aside": {
-      "collapse": "Seitenleiste einklappen",
-      "getApps": "Apps herunterladen"
+      "collapse": "Seitenleiste einklappen"
     },
     "fileTree": {
       "empty": "Leer",

@@ -8,16 +8,17 @@ import {
   loginAsUser,
   loginWithTwoFactor,
   logout,
+  openAccountMenuItem,
 } from './helpers/auth'
 
 /**
  * Walk from the authenticated file browser to the change-password screen
- * via the in-app sidebar + "My account" link. A full `page.goto` would
+ * via the account menu in the top bar. A full `page.goto` would
  * reload the SPA and drop the in-memory keypair, bouncing the user back
  * to /auth/login.
  */
-async function openChangePasswordViaSidebar(page: import('@playwright/test').Page) {
-  await page.locator('aside').getByText('Account', { exact: true }).first().click()
+async function openChangePasswordViaAccountMenu(page: import('@playwright/test').Page) {
+  await openAccountMenuItem(page, 'account')
   await page.waitForURL(/\/account(\/|$|\?)/)
   await page.getByRole('link', { name: 'Change', exact: true }).click()
   await page.waitForURL(/\/account\/change-password/)
@@ -36,7 +37,7 @@ test.describe('Change password', () => {
     const password = randomPassword()
     await createUser(page, email, password)
 
-    await openChangePasswordViaSidebar(page)
+    await openChangePasswordViaAccountMenu(page)
 
     const newPassword = randomPassword()
     await page.locator('#password').fill(newPassword)
@@ -62,7 +63,7 @@ test.describe('Change password', () => {
     const password = randomPassword()
     const { secret } = await createUserWithTwoFactor(page, email, password)
 
-    await openChangePasswordViaSidebar(page)
+    await openChangePasswordViaAccountMenu(page)
 
     const newPassword = randomPassword()
     await page.locator('#password').fill(newPassword)
@@ -86,7 +87,7 @@ test.describe('Change password', () => {
     const password = randomPassword()
     const { secret } = await createUserWithTwoFactor(page, email, password)
 
-    await openChangePasswordViaSidebar(page)
+    await openChangePasswordViaAccountMenu(page)
     await page.locator('#password').fill(randomPassword())
 
     const finished = page.waitForResponse(

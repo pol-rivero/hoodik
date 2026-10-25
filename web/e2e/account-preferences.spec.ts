@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { randomEmail, randomPassword, createUser, loginAsUser, logout } from './helpers/auth'
+import {
+  randomEmail,
+  randomPassword,
+  createUser,
+  loginAsUser,
+  logout,
+  openAccountMenuItem
+} from './helpers/auth'
 
 /**
  * The sharing-notification toggle is the app's only PATCH request. Its unit
@@ -14,7 +21,7 @@ test.describe('Account preferences', () => {
     const password = randomPassword()
     await createUser(page, email, password)
 
-    await page.locator('aside').getByText('Account', { exact: true }).first().click()
+    await openAccountMenuItem(page, 'account')
 
     const toggle = page.getByTestId('account-share-notifications-toggle')
     await toggle.waitFor()
@@ -30,7 +37,7 @@ test.describe('Account preferences', () => {
 
     await logout(page)
     await loginAsUser(page, email, password)
-    await page.locator('aside').getByText('Account', { exact: true }).first().click()
+    await openAccountMenuItem(page, 'account')
 
     await expect(page.getByTestId('account-share-notifications-toggle')).not.toBeChecked()
   })
