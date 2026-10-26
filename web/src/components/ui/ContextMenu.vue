@@ -231,7 +231,7 @@ onUnmounted(() => {
       aria-orientation="vertical"
       :aria-label="props.label"
       data-testid="context-menu"
-      class="fixed z-[60] w-max min-w-[12rem] max-w-[18rem] overflow-y-auto py-1 rounded-md shadow-lg bg-white dark:bg-brownish-700 border border-paper-300 dark:border-brownish-600 text-sm focus:outline-none"
+      class="fixed z-[60] w-max min-w-[12rem] max-w-[18rem] overflow-y-auto py-1 rounded-md shadow-lg bg-white dark:bg-brownish-700 text-brownish-900 dark:text-dirty-white border border-paper-300 dark:border-brownish-600 text-sm focus:outline-none"
       :style="{
         left: `${left}px`,
         top: `${top}px`,
