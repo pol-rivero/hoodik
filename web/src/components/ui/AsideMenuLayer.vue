@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { mdiClose } from '@mdi/js'
-import { computed, ref, watch } from 'vue'
+import { computed } from 'vue'
 import { store as style } from '!/style'
 import { store as crypto } from '!/crypto'
 import AsideMenuList from '@/components/ui/AsideMenuList.vue'
@@ -8,48 +8,15 @@ import AsideFileTree from '@/components/ui/AsideFileTree.vue'
 import FolderDropTarget from '@/components/files/FolderDropTarget.vue'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 import type { AsideMenuItemType } from '@/menuAside'
-import { useRouter } from 'vue-router'
 import StatsLi from '../files/StatsLi.vue'
 
-const props = defineProps<{
+defineProps<{
   menu: AsideMenuItemType[]
 }>()
 
 const cryptoStore = crypto()
-const router = useRouter()
-
-const EXPANDED_KEY = 'hoodik:sidebar:expandedKey'
-const expandedKey = ref<string | null>(sessionStorage.getItem(EXPANDED_KEY))
 
 const hasKeypair = computed(() => !!cryptoStore.keypair)
-
-watch(expandedKey, (v) => {
-  if (v) sessionStorage.setItem(EXPANDED_KEY, v)
-  else sessionStorage.removeItem(EXPANDED_KEY)
-})
-
-// Auto-expand the matching section based on current route
-watch(
-  () => router.currentRoute.value.name,
-  (routeName) => {
-    if (!routeName) return
-    const name = String(routeName)
-    for (const item of props.menu) {
-      if (!item.expandable) continue
-      const itemRouteName = (item.to as any)?.name
-      if (name === itemRouteName || name.startsWith(itemRouteName + '-')) {
-        expandedKey.value = itemRouteName
-        return
-      }
-    }
-  },
-  { immediate: true }
-)
-
-function toggleExpand(item: AsideMenuItemType) {
-  const key = (item.to as any)?.name
-  expandedKey.value = expandedKey.value === key ? null : key
-}
 
 const emit = defineEmits(['menu-click', 'aside-lg-close-click'])
 const styleStore = style()
@@ -97,19 +64,14 @@ const asideLgCloseClick = (event: Event) => {
         <template v-for="item in menu" :key="(item.to as any)?.name || item.label">
           <template v-if="item.expandable && hasKeypair">
             <!-- The files entry stands for the account root: dropping dragged
-                 rows on it moves them there; hovering opens the tree. -->
+                 rows on it moves them there. -->
             <FolderDropTarget
               :ancestors="[]"
               over-class="ring-2 ring-inset ring-orangy-400 bg-orangy-500/20"
-              spring-load
-              @spring-load="expandedKey = (item.to as any)?.name"
             >
-              <AsideMenuList :menu="[item]" @menu-click="() => toggleExpand(item)" />
+              <AsideMenuList :menu="[item]" @menu-click="menuClick" />
             </FolderDropTarget>
-            <AsideFileTree
-              v-if="expandedKey === (item.to as any)?.name"
-              :keypair="cryptoStore.keypair!"
-            />
+            <AsideFileTree :keypair="cryptoStore.keypair!" />
           </template>
           <AsideMenuList v-else :menu="[item]" @menu-click="menuClick" />
         </template>
