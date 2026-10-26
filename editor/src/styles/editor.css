@@ -19,17 +19,17 @@
   --md-h2: #232323;
   --md-h3: #2A2A2A;
   --md-h456: #333333;
-  --md-h1-border: rgba(238, 132, 52, 0.35);
+  --md-h1-border: rgba(72, 135, 228, 0.35);
   --md-h2-border: rgba(0, 0, 0, 0.08);
   --md-strong: #1E1E1E;
   --md-del: #8A8A86;
-  --md-link: #C76F2C;
-  --md-link-hover: #9F5822;
+  --md-link: #336FC6;
+  --md-link-hover: #2861B1;
   --md-link-underline: rgba(199, 111, 44, 0.35);
   --md-bq-text: #6B6B66;
-  --md-code-bg: rgba(238, 132, 52, 0.08);
-  --md-code-border: rgba(238, 132, 52, 0.15);
-  --md-code-text: #9F5822;
+  --md-code-bg: rgba(72, 135, 228, 0.08);
+  --md-code-border: rgba(72, 135, 228, 0.15);
+  --md-code-text: #2861B1;
   --md-pre-bg: #F1F1EF;
   --md-pre-border: rgba(0, 0, 0, 0.06);
   --md-pre-text: #3A3A3A;
@@ -42,16 +42,16 @@
   --md-tok-fn: #586994;
   --md-tok-important: #C76F2C;
   --md-tok-deleted: #A43144;
-  --md-marker: #C76F2C;
-  --md-hr: rgba(238, 132, 52, 0.35);
+  --md-marker: #336FC6;
+  --md-hr: rgba(72, 135, 228, 0.35);
   --md-table-border: rgba(0, 0, 0, 0.1);
-  --md-th-bg: rgba(238, 132, 52, 0.08);
+  --md-th-bg: rgba(72, 135, 228, 0.08);
   --md-th-text: #333333;
   --md-row-even: rgba(0, 0, 0, 0.02);
-  --md-row-hover: rgba(238, 155, 92, 0.08);
-  --md-selection: rgba(238, 132, 52, 0.3);
-  --md-find-match: rgba(238, 132, 52, 0.28);
-  --md-find-current: rgba(238, 132, 52, 0.55);
+  --md-row-hover: rgba(89, 149, 237, 0.08);
+  --md-selection: rgba(72, 135, 228, 0.3);
+  --md-find-match: rgba(72, 135, 228, 0.28);
+  --md-find-current: rgba(72, 135, 228, 0.55);
   --md-task-border: rgba(0, 0, 0, 0.3);
   --md-scrollbar: rgba(0, 0, 0, 0.15);
   --md-scrollbar-hover: rgba(0, 0, 0, 0.25);
@@ -70,17 +70,17 @@
   --md-h2: #efefef;
   --md-h3: #e0e0e0;
   --md-h456: #d0d0d0;
-  --md-h1-border: rgba(238, 132, 52, 0.2);
+  --md-h1-border: rgba(72, 135, 228, 0.2);
   --md-h2-border: rgba(255, 255, 255, 0.06);
   --md-strong: #f0f0f0;
   --md-del: #707070;
-  --md-link: #EE9B5C;
-  --md-link-hover: #F2AC78;
-  --md-link-underline: rgba(238, 155, 92, 0.3);
+  --md-link: #5995ED;
+  --md-link-hover: #77ADFD;
+  --md-link-underline: rgba(89, 149, 237, 0.3);
   --md-bq-text: #999999;
-  --md-code-bg: rgba(238, 132, 52, 0.08);
-  --md-code-border: rgba(238, 132, 52, 0.12);
-  --md-code-text: #EE9B5C;
+  --md-code-bg: rgba(72, 135, 228, 0.08);
+  --md-code-border: rgba(72, 135, 228, 0.12);
+  --md-code-text: #5995ED;
   --md-pre-bg: #111111;
   --md-pre-border: rgba(255, 255, 255, 0.05);
   --md-pre-text: #c8c8c8;
@@ -93,16 +93,16 @@
   --md-tok-fn: #8BA9E0;
   --md-tok-important: #F2AC78;
   --md-tok-deleted: #A63446;
-  --md-marker: #EE8434;
-  --md-hr: rgba(238, 132, 52, 0.25);
+  --md-marker: #4887E4;
+  --md-hr: rgba(72, 135, 228, 0.25);
   --md-table-border: rgba(255, 255, 255, 0.06);
-  --md-th-bg: rgba(238, 132, 52, 0.06);
+  --md-th-bg: rgba(72, 135, 228, 0.06);
   --md-th-text: #e0e0e0;
   --md-row-even: rgba(255, 255, 255, 0.015);
-  --md-row-hover: rgba(238, 155, 92, 0.04);
-  --md-selection: rgba(238, 132, 52, 0.25);
-  --md-find-match: rgba(238, 155, 92, 0.35);
-  --md-find-current: rgba(238, 155, 92, 0.7);
+  --md-row-hover: rgba(89, 149, 237, 0.04);
+  --md-selection: rgba(72, 135, 228, 0.25);
+  --md-find-match: rgba(89, 149, 237, 0.35);
+  --md-find-current: rgba(89, 149, 237, 0.7);
   --md-task-border: rgba(255, 255, 255, 0.3);
   --md-scrollbar: rgba(255, 255, 255, 0.08);
   --md-scrollbar-hover: rgba(255, 255, 255, 0.15);
@@ -184,7 +184,7 @@
 
 /* Blockquotes */
 .milkdown-wrapper .milkdown .ProseMirror blockquote {
-  border-left: 3px solid #EE8434;
+  border-left: 3px solid #4887E4;
   padding: 0.25em 0 0.25em 1.25em;
   margin: 1em 0;
   color: var(--md-bq-text);
@@ -304,8 +304,8 @@
 }
 
 .milkdown-wrapper .milkdown .ProseMirror li[data-item-type="task"] > .task-checkbox:checked {
-  border-color: #EE8434;
-  background-color: #EE8434;
+  border-color: #4887E4;
+  background-color: #4887E4;
   background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='%23fff' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
   background-size: 100% 100%;
   background-position: center;
@@ -392,5 +392,5 @@
 
 .milkdown-wrapper .milkdown .ProseMirror .hoodik-find-match-current {
   background: var(--md-find-current);
-  box-shadow: 0 0 0 1px rgba(238, 132, 52, 0.85);
+  box-shadow: 0 0 0 1px rgba(72, 135, 228, 0.85);
 }

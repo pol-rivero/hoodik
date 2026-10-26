@@ -3,7 +3,7 @@
 // neither, and the purple one had no caller.
 const gradientBase = 'bg-gradient-to-tr'
 export const gradientDark = `${gradientBase} from-brownish-700 via-brownish-900 to-brownish-800`
-export const gradientCrimsonEmber = `${gradientBase} from-redish-400 via-redish-500 to-orangy-500`
+export const gradientAzure = `${gradientBase} from-primary-600 via-primary-400 to-primary-100`
 export type ColorType =
   | 'dark'
   | 'light'
@@ -21,7 +21,7 @@ export const colorsBgLight = {
   success: 'bg-greeny-500 border-greeny-500 text-white',
   danger: 'bg-redish-500 border-redish-500 text-white',
   warning: 'bg-orangy-500 border-orangy-500 text-white',
-  info: 'bg-redish-500 border-redish-500 text-white',
+  info: 'bg-primary-500 border-primary-500 text-white',
   empty: 'bg-transparent text-brownish-700 dark:text-white'
 }
 
@@ -34,7 +34,7 @@ export const colorsText = {
   success: 'text-greeny-500 dark:text-greeny-300',
   danger: 'text-redish-700 dark:text-redish-100',
   warning: 'text-orangy-800 dark:text-orangy-400',
-  info: 'text-redish-700 dark:text-redish-100',
+  info: 'text-primary-700 dark:text-primary-100',
   empty: 'text-brownish-700 dark:text-white'
 }
 
@@ -45,7 +45,7 @@ export const colorsOutline = {
   success: [colorsText.success, 'border-greeny-500'],
   danger: [colorsText.danger, 'border-redish-500'],
   warning: [colorsText.warning, 'border-orangy-500'],
-  info: [colorsText.info, 'border-redish-500'],
+  info: [colorsText.info, 'border-primary-500'],
   empty: [colorsText.empty]
 }
 export const getButtonColor = (
@@ -62,7 +62,7 @@ export const getButtonColor = (
       success: 'ring-greeny-300 dark:ring-greeny-700 ',
       danger: 'ring-redish-300 dark:ring-redish-700 ',
       warning: 'ring-orangy-300 dark:ring-orangy-700 ',
-      info: 'ring-redish-300 dark:ring-redish-700 ',
+      info: 'ring-primary-300 dark:ring-primary-700 ',
       empty: 'ring-brownish-200 dark:ring-brownish-500'
     },
     active: {
@@ -72,7 +72,7 @@ export const getButtonColor = (
       success: 'bg-greeny-700 dark:bg-greeny-600 ',
       danger: 'bg-redish-700 dark:bg-redish-600 ',
       warning: 'bg-orangy-700 dark:bg-orangy-600 ',
-      info: 'bg-redish-600 dark:bg-redish-500 ',
+      info: 'bg-primary-600 dark:bg-primary-500 ',
       empty: 'bg-transparent'
     },
     bg: {
@@ -82,7 +82,7 @@ export const getButtonColor = (
       success: 'bg-greeny-600 dark:bg-greeny-500 text-white ',
       danger: 'bg-redish-600 dark:bg-redish-500 text-white ',
       warning: 'bg-orangy-600 dark:bg-orangy-500 text-white ',
-      info: 'bg-redish-500 dark:bg-redish-400 text-white ',
+      info: 'bg-primary-500 dark:bg-primary-400 text-white ',
       empty: 'bg-transparent text-brownish-700 dark:text-white'
     },
     bgHover: {
@@ -95,7 +95,7 @@ export const getButtonColor = (
         'hover:bg-redish-700 hover:border-redish-700 hover:dark:bg-redish-600 hover:dark:border-redish-600 ',
       warning:
         'hover:bg-orangy-700 hover:border-orangy-700 hover:dark:bg-orangy-600 hover:dark:border-orangy-600 ',
-      info: 'hover:bg-redish-600 hover:border-redish-600 hover:dark:bg-redish-300 hover:dark:border-redish-300 ',
+      info: 'hover:bg-primary-600 hover:border-primary-600 hover:dark:bg-primary-300 hover:dark:border-primary-300 ',
       empty: 'hover:bg-transparent'
     },
     borders: {
@@ -105,7 +105,7 @@ export const getButtonColor = (
       success: 'border-greeny-600 dark:border-greeny-500 ',
       danger: 'border-redish-600 dark:border-redish-500 ',
       warning: 'border-orangy-600 dark:border-orangy-500 ',
-      info: 'border-redish-500 dark:border-redish-400 ',
+      info: 'border-primary-500 dark:border-primary-400 ',
       empty: 'border-transparent'
     },
     // Outline buttons draw this hue as text on a charcoal panel, so every step
@@ -117,7 +117,7 @@ export const getButtonColor = (
       success: 'text-greeny-500 dark:text-greeny-300 ',
       danger: 'text-redish-700 dark:text-redish-100 ',
       warning: 'text-orangy-800 dark:text-orangy-400 ',
-      info: 'text-redish-700 dark:text-redish-100 ',
+      info: 'text-primary-700 dark:text-primary-100 ',
       empty: 'text-brownish-700 dark:text-white'
     },
     outlineHover: {
@@ -131,7 +131,7 @@ export const getButtonColor = (
         'hover:bg-redish-600 hover:text-white hover:text-white hover:dark:text-white hover:dark:border-redish-600 ',
       warning:
         'hover:bg-orangy-600 hover:text-white hover:text-white hover:dark:text-white hover:dark:border-orangy-600 ',
-      info: 'hover:bg-redish-500 hover:text-white hover:dark:text-white hover:dark:border-redish-500 ',
+      info: 'hover:bg-primary-500 hover:text-white hover:dark:text-white hover:dark:border-primary-500 ',
       empty: 'hover:text-brownish-700 hover:dark:text-white '
     }
   }

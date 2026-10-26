@@ -88,14 +88,14 @@ const inputDisabled = computed(() => props.disabled || defaultQuota.value)
         :disabled="inputDisabled"
         :aria-label="title || $t('admin.user.storageQuota')"
         data-testid="quota-amount-input"
-        class="w-full min-w-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500 disabled:opacity-50"
+        class="w-full min-w-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500 disabled:opacity-50"
       />
       <select
         v-model="unit"
         @change="emitBytes"
         :disabled="inputDisabled"
         data-testid="quota-unit-select"
-        class="shrink-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg pl-3 pr-9 py-2 focus:outline-none focus:border-redish-500 disabled:opacity-50"
+        class="shrink-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg pl-3 pr-9 py-2 focus:outline-none focus:border-primary-500 disabled:opacity-50"
       >
         <option v-for="u in Object.keys(UNITS)" :key="u" :value="u">{{ $t(`size.${u}`) }}</option>
       </select>

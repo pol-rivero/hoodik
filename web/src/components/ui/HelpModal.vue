@@ -103,7 +103,7 @@ const links = [
               :href="l.href"
               target="_blank"
               rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-redish-700 dark:text-redish-100 hover:underline"
+              class="inline-flex items-center gap-1 text-primary-700 dark:text-primary-100 hover:underline"
             >
               {{ $t(l.label) }}
               <BaseIcon :path="mdiOpenInNew" :size="13" aria-hidden="true" />

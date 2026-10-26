@@ -93,7 +93,7 @@ function goToAccount() {
         <p class="text-brownish-600 dark:text-dirty-white/70">
           {{ $t('account.connectDevice.noSecrets') }}
         </p>
-        <button type="button" class="text-redish-500 dark:text-redish-300 underline" @click="goToAccount">
+        <button type="button" class="text-primary-500 dark:text-primary-300 underline" @click="goToAccount">
           {{ $t('account.connectDevice.promptLater') }}
         </button>
       </div>

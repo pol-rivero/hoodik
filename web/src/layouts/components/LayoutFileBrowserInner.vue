@@ -668,7 +668,7 @@ watch(
       </span>
       <button
         type="button"
-        class="underline text-redish-500 dark:text-redish-100"
+        class="underline text-primary-500 dark:text-primary-100"
         data-testid="fork-progress-cancel"
         @click.prevent="cancelFork"
       >{{ $t('common.cancel') }}</button>

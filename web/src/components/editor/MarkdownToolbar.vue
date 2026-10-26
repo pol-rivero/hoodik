@@ -199,9 +199,9 @@ defineExpose({ closeDropdown })
 .dark .md-heading-option { color: #b0b0b0; }
 
 .md-heading-option:hover {
-  background: rgba(238, 155, 92, 0.1);
-  color: #C76F2C;
+  background: rgba(89, 149, 237, 0.1);
+  color: #336FC6;
 }
 
-.dark .md-heading-option:hover { color: #EE9B5C; }
+.dark .md-heading-option:hover { color: #5995ED; }
 </style>

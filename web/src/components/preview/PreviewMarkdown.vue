@@ -537,12 +537,12 @@ defineExpose({ exportPdf: handleExportPdf })
 <style scoped>
 .md-toolbar {
   background: #FAFAF9;
-  border-bottom: 1px solid rgba(238, 132, 52, 0.25);
+  border-bottom: 1px solid rgba(72, 135, 228, 0.25);
 }
 
 .dark .md-toolbar {
   background: #1a1a1a;
-  border-bottom-color: rgba(238, 132, 52, 0.15);
+  border-bottom-color: rgba(72, 135, 228, 0.15);
 }
 
 .md-convert-banner {
@@ -564,16 +564,16 @@ defineExpose({ exportPdf: handleExportPdf })
 }
 
 .md-convert-link {
-  color: #C76F2C;
+  color: #336FC6;
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 150ms;
 }
 
-.md-convert-link:hover { color: #9F5822; }
-.dark .md-convert-link { color: #EE9B5C; }
-.dark .md-convert-link:hover { color: #F2AC78; }
+.md-convert-link:hover { color: #2861B1; }
+.dark .md-convert-link { color: #5995ED; }
+.dark .md-convert-link:hover { color: #77ADFD; }
 .md-convert-link:disabled { opacity: 0.5; cursor: wait; }
 
 .md-raw-wrapper { background: #F4F4F3; }

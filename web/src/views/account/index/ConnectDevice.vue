@@ -41,7 +41,7 @@ function openApp() {
         <button
           v-if="platform"
           type="button"
-          class="inline-block mt-3 text-sm text-redish-500 dark:text-redish-300 underline"
+          class="inline-block mt-3 text-sm text-primary-500 dark:text-primary-300 underline"
           data-testid="account-connect-link"
           @click="openApp"
         >

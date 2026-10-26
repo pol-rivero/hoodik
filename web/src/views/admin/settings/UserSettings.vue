@@ -130,7 +130,7 @@ const canSave = computed(() => !data.value?.trash || retentionValid.value)
             v-model="data.sharing.default_cipher"
             :disabled="loading"
             data-testid="admin-default-cipher-select"
-            class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+            class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
           >
             <!-- eslint-disable @intlify/vue-i18n/no-raw-text -->
             <option value="aegis128l">AEGIS-128L</option>
@@ -178,7 +178,7 @@ const canSave = computed(() => !data.value?.trash || retentionValid.value)
           data-testid="admin-trash-retention"
           :aria-invalid="!retentionValid"
           aria-describedby="trash_retention_days_error"
-          class="w-32 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+          class="w-32 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
         />
         <p
           v-if="!retentionValid"

@@ -177,7 +177,7 @@ function roleBadgeClass(role: ShareRole): string {
     case 'editor':
       return 'bg-blueish-200 text-blueish-900 dark:bg-blueish-800 dark:text-blueish-100'
     case 'co-owner':
-      return 'bg-redish-200 text-redish-900 dark:bg-redish-800 dark:text-redish-100'
+      return 'bg-primary-200 text-primary-900 dark:bg-primary-800 dark:text-primary-100'
   }
 }
 

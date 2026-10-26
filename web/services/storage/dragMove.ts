@@ -213,8 +213,8 @@ function setDragImage(dt: DataTransfer, files: AppFile[]) {
 
   const dark = document.documentElement.classList.contains('dark')
   const colors = dark
-    ? { bg: '#232323', fg: '#EEEEEE', border: '#393939', icon: '#EE8434' }
-    : { bg: '#FFFFFF', fg: '#1E1E1E', border: '#D2D2CE', icon: '#C76F2C' }
+    ? { bg: '#232323', fg: '#EEEEEE', border: '#393939', icon: '#4887E4' }
+    : { bg: '#FFFFFF', fg: '#1E1E1E', border: '#D2D2CE', icon: '#336FC6' }
 
   const pill = document.createElement('div')
   Object.assign(pill.style, {

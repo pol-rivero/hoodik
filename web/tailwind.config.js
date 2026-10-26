@@ -14,6 +14,22 @@ const redish = {
   950: '#1C0508'
 }
 
+// Brand blue. Each step matches the lightness of the same redish step, so
+// contrast tuned against redish carries over when a class moves between them.
+const primary = {
+  50: '#77ADFD',
+  100: '#5995ED',
+  200: '#4887E4',
+  300: '#336FC6',
+  400: '#2861B1', // native
+  500: '#255EB0',
+  600: '#1E54A1',
+  700: '#13458B',
+  800: '#083169',
+  900: '#081A34',
+  950: '#030D1E'
+}
+
 module.exports = {
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx}'],
   darkMode: 'class',
@@ -33,7 +49,7 @@ module.exports = {
         400: '#B9B9B4'
       },
       redish,
-      primary: redish,
+      primary,
       brownish: {
         // 50 is the muted-text step. It sits at #939393 rather than the
         // older #898989, which measured 4.49:1 against the #232323 panel —

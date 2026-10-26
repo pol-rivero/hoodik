@@ -80,12 +80,12 @@ onMounted(() => loadFolders(currentId.value))
         type="button"
         :title="$t('common.back')"
         :aria-label="$t('common.back')"
-        class="flex items-center gap-1 text-orangy-800 dark:text-orangy-400 hover:text-orangy-900 dark:hover:text-orangy-300 transition-colors"
+        class="flex items-center gap-1 text-primary-400 dark:text-primary-50 hover:text-primary-600 dark:hover:text-primary-50 transition-colors"
         @click="back"
       >
         <BaseIcon :path="mdiArrowLeft" :size="14" />
       </button>
-      <BaseIcon :path="mdiFolder" :size="16" class="text-orangy-700 dark:text-orangy-400" />
+      <BaseIcon :path="mdiFolder" :size="16" class="text-primary-300 dark:text-primary-50" />
       <span class="text-brownish-600 dark:text-brownish-50 truncate">{{ currentName }}</span>
     </div>
 
@@ -100,7 +100,7 @@ onMounted(() => loadFolders(currentId.value))
         class="flex items-center gap-2 px-3 py-2 text-sm cursor-pointer transition-colors hover:bg-paper-50 dark:hover:bg-brownish-700/50"
         @click="open(folder)"
       >
-        <BaseIcon :path="mdiFolder" :size="16" class="flex-shrink-0 text-orangy-700 dark:text-orangy-400" />
+        <BaseIcon :path="mdiFolder" :size="16" class="flex-shrink-0 text-primary-300 dark:text-primary-50" />
         <span class="truncate dark:text-brownish-50">{{ folder.name }}</span>
       </li>
     </ul>

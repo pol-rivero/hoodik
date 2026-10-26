@@ -29,7 +29,7 @@ const lastActiveAt = computed(() => {
       <span v-else class="text-brownish-400 dark:text-brownish-50">{{ $t('admin.users.tfaOff') }}</span>
     </td>
     <td :data-label="$t('admin.role')">
-      <span v-if="user.role" class="text-xs font-medium text-orangy-800 dark:text-orangy-400">{{ user.role }}</span>
+      <span v-if="user.role" class="text-xs font-medium text-primary-400 dark:text-primary-50">{{ user.role }}</span>
       <span v-else class="text-brownish-400 dark:text-brownish-50">—</span>
     </td>
     <td :data-label="$t('admin.users.emailActivated')">

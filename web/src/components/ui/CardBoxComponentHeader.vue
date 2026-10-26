@@ -39,7 +39,7 @@ const buttonClick = (event: Event) => {
         v-if="buttonIcon"
         :title="buttonLabel ?? title"
         :aria-label="buttonLabel ?? title"
-        class="flex items-center ml-2 justify-center ring-redish-700 focus:ring"
+        class="flex items-center ml-2 justify-center ring-primary-300 focus:ring"
         @click="buttonClick"
       >
         <BaseIcon :path="buttonIcon" />

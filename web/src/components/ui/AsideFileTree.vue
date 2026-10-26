@@ -54,7 +54,7 @@ const { t } = useI18n()
 
 const rootLoading = ref(false)
 
-const DROP_OVER_CLASS = '!bg-orangy-500/25 !text-white ring-1 ring-inset ring-orangy-400'
+const DROP_OVER_CLASS = '!bg-primary-100/25 !text-white ring-1 ring-inset ring-primary-50'
 
 const activeFileId = computed(() => {
   const id = route.params.id || route.params.file_id
@@ -496,7 +496,7 @@ watch(
           class="flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors duration-150"
           :class="
             node.file.id === activeFolderId
-              ? 'bg-orangy-500/15 text-orangy-300'
+              ? 'bg-primary-100/15 text-primary-50'
               : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
           "
           data-testid="aside-tree-shared-with-me"
@@ -510,7 +510,7 @@ watch(
             data-testid="aside-tree-chevron"
             @click.stop="toggleExpand(node)"
           />
-          <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
+          <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-primary-50" />
           <span class="truncate">{{ node.file.name }}</span>
         </FolderDropTarget>
 
@@ -525,7 +525,7 @@ watch(
           class="flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors duration-150"
           :class="
             node.file.id === activeFolderId
-              ? 'bg-orangy-500/15 text-orangy-300'
+              ? 'bg-primary-100/15 text-primary-50'
               : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
           "
           @click="toggleFolder(node)"
@@ -538,7 +538,7 @@ watch(
             data-testid="aside-tree-chevron"
             @click.stop="toggleExpand(node)"
           />
-          <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
+          <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-primary-50" />
           <span class="truncate">{{ node.file.name }}</span>
         </FolderDropTarget>
 
@@ -586,7 +586,7 @@ watch(
           class="flex items-center gap-1 px-2 py-1 cursor-pointer transition-colors duration-150"
           :class="
             node.file.id === activeFileId
-              ? 'bg-orangy-500/15 text-orangy-300'
+              ? 'bg-primary-100/15 text-primary-50'
               : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
           "
           @click="onFileClick(node.file)"

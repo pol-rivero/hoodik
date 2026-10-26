@@ -139,8 +139,8 @@ watch(
               text-brownish-900 dark:text-white
               placeholder-brownish-100/60 dark:placeholder-brownish-400
               focus:outline-none focus:ring-2 focus:ring-offset-0
-              focus:ring-redish-400/60 dark:focus:ring-redish-500/50
-              focus:border-redish-400/50 dark:focus:border-redish-500/40"
+              focus:ring-primary-200/60 dark:focus:ring-primary-100/50
+              focus:border-primary-400/50 dark:focus:border-primary-500/40"
             :placeholder="$t('files.search.placeholder')"
             @input="debounced"
           />

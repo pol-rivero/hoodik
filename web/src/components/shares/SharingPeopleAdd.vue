@@ -193,7 +193,7 @@ const {
       >
         <div class="flex flex-col items-center gap-3 px-6 py-4 text-center max-w-full">
           <span
-            class="inline-block w-7 h-7 rounded-full border-2 border-paper-300 border-t-redish-500 share-dialog-spinner"
+            class="inline-block w-7 h-7 rounded-full border-2 border-paper-300 border-t-primary-500 share-dialog-spinner"
             aria-hidden="true"
           />
           <p
@@ -213,7 +213,7 @@ const {
           <button
             v-if="(indeterminateActive || determinate) && progress.phase !== 'submitting'"
             type="button"
-            class="text-xs underline text-redish-500 dark:text-redish-100 hover:text-redish-300"
+            class="text-xs underline text-primary-500 dark:text-primary-100 hover:text-primary-300"
             data-testid="share-dialog-submit-overlay-cancel"
             @click.prevent="abortWalk"
           >

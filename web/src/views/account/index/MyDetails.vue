@@ -42,15 +42,15 @@ async function copyToClipboard(value: string, field: string) {
 </script>
 <template>
   <CardBox :class="props.class" v-if="user">
-    <div class="-mx-4 -mt-4 px-6 py-6 bg-gradient-to-r from-redish-500/5 via-transparent to-transparent dark:from-redish-500/10 border-b border-paper-200 dark:border-brownish-700/50 rounded-t-2xl">
+    <div class="-mx-4 -mt-4 px-6 py-6 bg-gradient-to-r from-primary-500/5 via-transparent to-transparent dark:from-primary-500/10 border-b border-paper-200 dark:border-brownish-700/50 rounded-t-2xl">
       <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-redish-500 to-redish-600 text-white flex items-center justify-center text-xl font-bold shrink-0 select-none shadow-lg shadow-redish-500/20">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-xl font-bold shrink-0 select-none shadow-lg shadow-primary-500/20">
           {{ initials }}
         </div>
         <div class="min-w-0 flex-1">
           <p class="text-lg font-semibold truncate">{{ user.email }}</p>
           <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1.5">
-            <span v-if="user.role" class="inline-flex items-center text-xs font-semibold bg-orangy-400/15 text-orangy-400 px-2.5 py-0.5 rounded-full">
+            <span v-if="user.role" class="inline-flex items-center text-xs font-semibold bg-primary-50/15 text-primary-50 px-2.5 py-0.5 rounded-full">
               {{ user.role }}
             </span>
             <span v-else class="inline-flex items-center text-xs bg-paper-100 dark:bg-brownish-700 text-brownish-400 dark:text-brownish-50 px-2.5 py-0.5 rounded-full">

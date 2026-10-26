@@ -118,7 +118,7 @@ init()
               :value="unsent.link"
               @focus="($event.target as HTMLInputElement).select()"
               data-testid="invite-link-url"
-              class="min-w-0 flex-1 px-3 py-1.5 text-xs font-mono rounded-lg bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-600 text-brownish-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-redish-400/60"
+              class="min-w-0 flex-1 px-3 py-1.5 text-xs font-mono rounded-lg bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-600 text-brownish-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-200/60"
             />
             <button
               type="button"

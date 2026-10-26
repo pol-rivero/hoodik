@@ -471,10 +471,10 @@ async function purgeAll() {
 .vh-item-version {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #C76F2C;
+  color: #336FC6;
 }
 
-.dark .vh-item-version { color: #EE9B5C; }
+.dark .vh-item-version { color: #5995ED; }
 
 .vh-item-date {
   font-size: 0.75rem;

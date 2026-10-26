@@ -67,7 +67,7 @@ const asideLgCloseClick = (event: Event) => {
                  rows on it moves them there. -->
             <FolderDropTarget
               :ancestors="[]"
-              over-class="ring-2 ring-inset ring-orangy-400 bg-orangy-500/20"
+              over-class="ring-2 ring-inset ring-primary-50 bg-primary-100/20"
             >
               <AsideMenuList :menu="[item]" @menu-click="menuClick" />
             </FolderDropTarget>

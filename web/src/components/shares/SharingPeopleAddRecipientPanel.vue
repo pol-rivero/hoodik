@@ -153,7 +153,7 @@ const folderEditable = computed({
         <button
           v-if="indeterminateActive || determinate"
           type="button"
-          class="shrink-0 text-redish-500 dark:text-redish-100 underline"
+          class="shrink-0 text-primary-500 dark:text-primary-100 underline"
           data-testid="share-dialog-progress-cancel"
           @click.prevent="emit('abort-walk')"
         >
@@ -165,7 +165,7 @@ const folderEditable = computed({
         class="w-full bg-paper-200 dark:bg-brownish-700 h-1 rounded mt-1.5 overflow-hidden"
       >
         <div
-          class="bg-redish-500 h-1 rounded transition-all"
+          class="bg-primary-500 h-1 rounded transition-all"
           :style="{
             width: `${Math.min(100, (progress.current / Math.max(progress.total, 1)) * 100)}%`
           }"
@@ -175,7 +175,7 @@ const folderEditable = computed({
         v-else-if="indeterminateActive"
         class="w-full bg-paper-200 dark:bg-brownish-700 h-1 rounded mt-1.5 overflow-hidden"
       >
-        <div class="bg-redish-500 h-1 w-1/3 rounded share-dialog-indeterminate" />
+        <div class="bg-primary-500 h-1 w-1/3 rounded share-dialog-indeterminate" />
       </div>
     </div>
   </div>

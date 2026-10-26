@@ -156,7 +156,7 @@ watch(
         <CardBox>
           <div class="-mx-4 -my-4 px-6 py-5">
             <div class="flex items-start gap-4">
-              <div class="w-14 h-14 rounded-full bg-redish-500/15 dark:bg-redish-500/20 text-redish-500 dark:text-redish-100 flex items-center justify-center text-2xl font-bold shrink-0 select-none">
+              <div class="w-14 h-14 rounded-full bg-primary-500/15 dark:bg-primary-500/20 text-primary-500 dark:text-primary-100 flex items-center justify-center text-2xl font-bold shrink-0 select-none">
                 {{ initials }}
               </div>
               <div class="flex-1 min-w-0">
@@ -165,7 +165,7 @@ watch(
                   <BaseButton :icon="mdiRefresh" :xs="true" @click="get" :title="$t('common.refresh')" />
                 </div>
                 <div class="flex flex-wrap items-center gap-2 mt-2">
-                  <span v-if="user.role" class="inline-flex items-center text-xs font-semibold bg-orangy-400/15 text-orangy-400 px-2 py-0.5 rounded-full">
+                  <span v-if="user.role" class="inline-flex items-center text-xs font-semibold bg-primary-50/15 text-primary-50 px-2 py-0.5 rounded-full">
                     {{ user.role }}
                   </span>
                   <span v-else class="inline-flex text-xs bg-paper-100 dark:bg-brownish-700 text-brownish-400 dark:text-brownish-50 px-2 py-0.5 rounded-full">
@@ -300,7 +300,7 @@ watch(
                 <div>
                   <p class="text-sm font-medium">{{ $t('admin.role') }}</p>
                   <p class="text-xs mt-0.5">
-                    <span v-if="user.role" class="font-semibold text-orangy-800 dark:text-orangy-400">{{ user.role }}</span>
+                    <span v-if="user.role" class="font-semibold text-primary-400 dark:text-primary-50">{{ user.role }}</span>
                     <span v-else class="text-brownish-400 dark:text-brownish-50">{{ $t('admin.user.regularUser') }}</span>
                   </p>
                 </div>

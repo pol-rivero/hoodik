@@ -88,7 +88,7 @@ const progressPercent = computed(() =>
     >
       <div class="h-2 w-full rounded bg-paper-200 dark:bg-brownish-800">
         <div
-          class="h-2 rounded bg-redish-500 transition-all"
+          class="h-2 rounded bg-primary-500 transition-all"
           :style="{ width: `${progressPercent}%` }"
         />
       </div>

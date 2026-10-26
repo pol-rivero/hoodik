@@ -68,7 +68,7 @@ function ancestorsOf(parent: AppFile): AppFile[] {
   return index === -1 ? [] : props.parents.slice(0, index)
 }
 
-const DROP_OVER_CLASS = 'rounded-md bg-orangy-500/20 ring-2 ring-orangy-500'
+const DROP_OVER_CLASS = 'rounded-md bg-primary-100/20 ring-2 ring-primary-100'
 
 // Dragging over the collapsed "..." reveals the hidden crumbs as drop targets.
 const revealOnDrag = () => {

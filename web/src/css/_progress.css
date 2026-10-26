@@ -4,18 +4,18 @@
   }
 
   progress::-webkit-progress-bar {
-    @apply bg-redish-200;
+    @apply bg-primary-200;
   }
 
   progress::-webkit-progress-value {
-    @apply bg-redish-500;
+    @apply bg-primary-500;
   }
 
   progress::-moz-progress-bar {
-    @apply bg-redish-500;
+    @apply bg-primary-500;
   }
 
   progress::-ms-fill {
-    @apply bg-redish-500 border-0;
+    @apply bg-primary-500 border-0;
   }
 }

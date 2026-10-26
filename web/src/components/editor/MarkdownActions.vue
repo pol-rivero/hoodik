@@ -137,8 +137,8 @@ defineExpose({ closeDropdown })
 }
 
 .md-actions-option:hover {
-  background: rgba(238, 155, 92, 0.1);
-  color: #EE9B5C;
+  background: rgba(89, 149, 237, 0.1);
+  color: #5995ED;
 }
 
 .md-actions-convert { color: #8BA9E0; }

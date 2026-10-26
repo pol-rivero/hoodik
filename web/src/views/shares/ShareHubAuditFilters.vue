@@ -39,7 +39,7 @@ const emit = defineEmits<{
         :value="fileIdFilter"
         type="text"
         placeholder="00000000-…"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-redish-500"
+        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 font-mono focus:outline-none focus:border-primary-500"
         data-testid="share-hub-audit-file-filter"
         @input="emit('update:fileIdFilter', ($event.target as HTMLInputElement).value)"
       />
@@ -49,7 +49,7 @@ const emit = defineEmits<{
       <select
         :value="actionFilter"
         data-testid="share-hub-audit-action-filter"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
         @change="emit('update:actionFilter', ($event.target as HTMLSelectElement).value as 'all' | AuditEventAction)"
       >
         <option value="all">{{ $t('shares.audit.filters.allActions') }}</option>
@@ -67,7 +67,7 @@ const emit = defineEmits<{
           :value="senderEmailInput"
           type="email"
           :placeholder="$t('shares.audit.filters.senderPlaceholder')"
-          class="flex-1 min-w-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+          class="flex-1 min-w-0 bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
           data-testid="share-hub-audit-sender-filter"
           @input="emit('update:senderEmailInput', ($event.target as HTMLInputElement).value)"
           @keydown.enter.prevent="emit('resolve-sender')"
@@ -94,7 +94,7 @@ const emit = defineEmits<{
       <span class="block mb-1 text-brownish-300 dark:text-brownish-50">{{ $t('shares.audit.filters.recipient') }}</span>
       <select
         :value="recipientFilter"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
         data-testid="share-hub-audit-recipient-filter"
         @change="emit('update:recipientFilter', ($event.target as HTMLSelectElement).value)"
       >
@@ -107,7 +107,7 @@ const emit = defineEmits<{
       <input
         :value="startDate"
         type="date"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
         data-testid="share-hub-audit-from"
         @input="emit('update:startDate', ($event.target as HTMLInputElement).value)"
       />
@@ -117,7 +117,7 @@ const emit = defineEmits<{
       <input
         :value="endDate"
         type="date"
-        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-redish-500"
+        class="w-full bg-white dark:bg-brownish-800 border border-paper-300 dark:border-brownish-700 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-primary-500"
         data-testid="share-hub-audit-to"
         @input="emit('update:endDate', ($event.target as HTMLInputElement).value)"
       />

@@ -875,8 +875,8 @@ const sizes = {
     :aria-label="hasRows ? $t('files.browser.fileList') : undefined"
     :aria-multiselectable="hasRows && !props.selectionDisabled ? true : undefined"
     :class="{
-      'border-2 border-redish-300 border-spacing-0 m-[-2px]': isDropZone,
-      'outline outline-2 outline-orangy-500': isListingDropTarget
+      'border-2 border-primary-300 border-spacing-0 m-[-2px]': isDropZone,
+      'outline outline-2 outline-primary-100': isListingDropTarget
     }"
     :data-drop-over="isListingDropTarget ? 'true' : undefined"
     class="bg-white dark:bg-brownish-900 rounded-lg border border-paper-300/40 dark:border-brownish-700/40"
@@ -1022,7 +1022,7 @@ const sizes = {
       v-if="band"
       data-testid="selection-marquee"
       aria-hidden="true"
-      class="fixed z-20 pointer-events-none rounded-sm border border-orangy-600 bg-orangy-500/20"
+      class="fixed z-20 pointer-events-none rounded-sm border border-primary-200 bg-primary-100/20"
       :style="{
         left: `${band.left}px`,
         top: `${band.top}px`,

@@ -196,7 +196,7 @@ useKeyboardShortcuts([
       class="cursor-pointer flex items-center justify-between px-3 py-2 select-none dark:text-white"
       @click="showTable = !showTable"
       :class="{
-        'bg-redish-50 dark:bg-redish-700': totalItems > 0,
+        'bg-primary-50 dark:bg-primary-700': totalItems > 0,
         'bg-paper-100 dark:bg-brownish-600': totalItems === 0
       }"
     >

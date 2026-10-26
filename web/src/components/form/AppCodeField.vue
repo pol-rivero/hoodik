@@ -147,8 +147,8 @@ onMounted(() => {
                border text-brownish-900 dark:text-white
                transition duration-150 ease-in-out
                focus:outline-none focus:ring-2 focus:ring-offset-0
-               focus:ring-redish-400/60 dark:focus:ring-redish-500/50
-               focus:border-redish-400/50 dark:focus:border-redish-500/40
+               focus:ring-primary-200/60 dark:focus:ring-primary-100/50
+               focus:border-primary-400/50 dark:focus:border-primary-500/40
                disabled:opacity-50"
         :class="
           digit

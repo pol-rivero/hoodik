@@ -80,7 +80,7 @@ onMounted(() => {
           <h1 class="text-xl sm:text-2xl font-semibold">{{ $t('common.share') }}</h1>
           <div
             v-if="unreadCount > 0"
-            class="text-xs px-2.5 py-1 rounded-full bg-redish-500 text-white font-semibold"
+            class="text-xs px-2.5 py-1 rounded-full bg-primary-500 text-white font-semibold"
             data-testid="share-hub-unread-badge"
           >
             {{ $t('shares.hub.newBadge', { count: unreadCount }) }}
@@ -97,8 +97,8 @@ onMounted(() => {
             :to="tab.to"
             :data-testid="tab.testid"
             class="min-h-11 inline-flex items-center px-3 sm:px-4 py-2 text-sm border-b-2 -mb-px whitespace-nowrap transition-colors"
-            active-class="border-redish-500 text-redish-500 dark:text-redish-100 font-medium"
-            exact-active-class="border-redish-500 text-redish-500 dark:text-redish-100 font-medium"
+            active-class="border-primary-500 text-primary-500 dark:text-primary-100 font-medium"
+            exact-active-class="border-primary-500 text-primary-500 dark:text-primary-100 font-medium"
             :class="'border-transparent text-brownish-400 dark:text-brownish-50 hover:text-brownish-700 dark:hover:text-white'"
           >
             {{ tab.label }}

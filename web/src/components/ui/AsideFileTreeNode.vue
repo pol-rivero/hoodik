@@ -33,7 +33,7 @@ const emit = defineEmits<{
   'file-click': [file: AppFile]
 }>()
 
-const DROP_OVER_CLASS = '!bg-orangy-500/25 !text-white ring-1 ring-inset ring-orangy-400'
+const DROP_OVER_CLASS = '!bg-primary-100/25 !text-white ring-1 ring-inset ring-primary-50'
 
 const padLeft = `padding-left: ${props.depth * 16 + 8}px`
 
@@ -64,7 +64,7 @@ function springExpand() {
     class="flex items-center gap-1 py-1 cursor-pointer transition-colors duration-150"
     :class="
       node.file.id === activeFolderId
-        ? 'bg-orangy-500/15 text-orangy-300'
+        ? 'bg-primary-100/15 text-primary-50'
         : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
     "
     :style="padLeft"
@@ -78,7 +78,7 @@ function springExpand() {
       data-testid="aside-tree-chevron"
       @click.stop="emit('toggle-expand', node)"
     />
-    <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
+    <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-primary-50" />
     <span class="truncate">{{ node.file.name }}</span>
   </FolderDropTarget>
 
@@ -117,7 +117,7 @@ function springExpand() {
     class="flex items-center gap-1 py-1 cursor-pointer transition-colors duration-150"
     :class="
       node.file.id === activeFileId
-        ? 'bg-orangy-500/15 text-orangy-300'
+        ? 'bg-primary-100/15 text-primary-50'
         : 'text-brownish-50 hover:bg-brownish-700/50 hover:text-white'
     "
     :style="padLeft"

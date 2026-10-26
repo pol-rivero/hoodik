@@ -7,7 +7,7 @@ export const basic = {
   asideMenuItemActive: 'font-bold text-white',
   asideMenuDropdown: 'bg-brownish-700/50',
   navBarItemLabel: 'text-brownish-700',
-  navBarItemLabelHover: 'hover:text-redish-500',
-  navBarItemLabelActiveColor: 'text-redish-600',
+  navBarItemLabelHover: 'hover:text-primary-500',
+  navBarItemLabelActiveColor: 'text-primary-600',
   overlay: 'from-brownish-700 via-brownish-900 to-brownish-700'
 }

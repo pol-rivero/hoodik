@@ -23,7 +23,7 @@ function chipClass(value: ShareRole, muted = false): string {
   const base =
     'relative inline-flex items-center justify-center min-h-[2.5rem] px-2 py-1.5 rounded-lg border text-sm cursor-pointer transition-colors select-none'
   const active =
-    'border-redish-500 bg-redish-500 text-white font-medium'
+    'border-primary-500 bg-primary-500 text-white font-medium'
   const inactive =
     'border-paper-300 dark:border-brownish-700 text-brownish-700 dark:text-brownish-50 hover:border-brownish-300 dark:hover:border-brownish-500'
   const mutedClass = muted ? ' opacity-50 cursor-not-allowed' : ''

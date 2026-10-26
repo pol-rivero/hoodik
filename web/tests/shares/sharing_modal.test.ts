@@ -228,7 +228,7 @@ describe('SharingModal', () => {
     await flushPromises()
 
     const linkTabButton = wrapper.get('[data-testid="sharing-modal-tab-link"]')
-    expect(linkTabButton.classes().some((c) => c.includes('redish-500'))).toBe(true)
+    expect(linkTabButton.classes().some((c) => c.includes('primary-500'))).toBe(true)
     expect(wrapper.find('[data-testid="sharing-modal-people-list"]').exists()).toBe(false)
   })
 

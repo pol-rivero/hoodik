@@ -31,7 +31,7 @@ const resend = async () => {
 <template>
   <div
     v-if="authenticated && !authenticated?.user?.email_verified_at"
-    class="block bg-redish-100 dark:bg-redish-950 text-redish-950 dark:text-redish-100 rounded-lg p-4 mx-1 xl:mx-6"
+    class="block bg-primary-100 dark:bg-primary-950 text-primary-950 dark:text-primary-100 rounded-lg p-4 mx-1 xl:mx-6"
   >
     <i18n-t keypath="nav.activation.notice" scope="global">
       <template #resend>

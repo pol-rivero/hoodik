@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { store as style } from '!/style'
-import { gradientDark, gradientCrimsonEmber } from '@/colors'
+import { gradientDark, gradientAzure } from '@/colors'
 
-const colorClass = computed(() => (style().darkMode ? gradientDark : gradientCrimsonEmber))
+const colorClass = computed(() => (style().darkMode ? gradientDark : gradientAzure))
 </script>
 
 <template>

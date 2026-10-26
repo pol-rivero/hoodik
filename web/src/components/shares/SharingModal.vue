@@ -397,7 +397,7 @@ function onPeopleCancel(): void {
           type="button"
           class="flex-1 sm:flex-initial min-h-11 px-3 sm:px-4 py-2 text-sm inline-flex items-center justify-center gap-2 border-b-2 transition-colors"
           :class="tab === 'people'
-            ? 'border-redish-500 text-redish-500 dark:text-redish-100 font-medium'
+            ? 'border-primary-500 text-primary-500 dark:text-primary-100 font-medium'
             : 'border-transparent text-brownish-400 dark:text-brownish-50 hover:text-brownish-100'"
           data-testid="sharing-modal-tab-people"
           @click.prevent="tab = 'people'"
@@ -410,7 +410,7 @@ function onPeopleCancel(): void {
           type="button"
           class="flex-1 sm:flex-initial min-h-11 px-3 sm:px-4 py-2 text-sm inline-flex items-center justify-center gap-2 border-b-2 transition-colors"
           :class="tab === 'link'
-            ? 'border-redish-500 text-redish-500 dark:text-redish-100 font-medium'
+            ? 'border-primary-500 text-primary-500 dark:text-primary-100 font-medium'
             : 'border-transparent text-brownish-400 dark:text-brownish-50 hover:text-brownish-100'"
           data-testid="sharing-modal-tab-link"
           @click.prevent="tab = 'link'"

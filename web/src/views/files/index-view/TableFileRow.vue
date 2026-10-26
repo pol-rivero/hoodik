@@ -124,7 +124,7 @@ const progressValue = computed(() => {
 // Selection keeps its own hover shade so a hovered selected row still reads as selected.
 const rowClass = computed(() => {
   if (props.selected) {
-    return 'file-row-selected bg-orangy-500/20 hover:bg-orangy-500/30 dark:bg-orangy-500/15 dark:hover:bg-orangy-500/25'
+    return 'file-row-selected bg-primary-100/20 hover:bg-primary-100/30 dark:bg-primary-100/15 dark:hover:bg-primary-100/25'
   }
   return 'dark:bg-brownish-900 hover:bg-paper-100 hover:dark:bg-brownish-700'
 })
@@ -337,9 +337,9 @@ const drop = (e: DragEvent) => {
     :class="{
       [rowClass]: true,
       'opacity-50': isBeingMoved,
-      '!bg-orangy-500/20 outline outline-2 -outline-offset-2 outline-orangy-500 z-10':
+      '!bg-primary-100/20 outline outline-2 -outline-offset-2 outline-primary-100 z-10':
         isMoveTarget,
-      'outline-2 outline-redish-300 outline z-10': isDropZone,
+      'outline-2 outline-primary-300 outline z-10': isDropZone,
       'outline outline-1 -outline-offset-1 outline-greeny-300 dark:outline-greeny-700':
         props.highlighted && !isDropZone && !isMoveTarget
     }"
@@ -349,7 +349,7 @@ const drop = (e: DragEvent) => {
     <div role="gridcell" class="flex flex-1 min-w-0">
       <button
         ref="navButton"
-        :class="`${sizes.name} flex justify-start cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-redish-400/60 dark:focus-visible:ring-redish-500/50`"
+        :class="`${sizes.name} flex justify-start cursor-pointer text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-200/60 dark:focus-visible:ring-primary-100/50`"
         :title="fileName"
         data-row-nav
         @keydown.space.prevent="(e: KeyboardEvent) => emits('row-click', e, file)"
@@ -479,16 +479,16 @@ const drop = (e: DragEvent) => {
   box-shadow: inset 0 -1px 0 0 rgba(120, 120, 120, 0.1);
 }
 
-/* orangy-500, the same accent as the sidebar's active item */
+/* primary-100, the same accent as the sidebar's active item */
 .file-row-separator.file-row-selected {
   box-shadow:
-    inset 3px 0 0 0 #ee9b5c,
+    inset 3px 0 0 0 #5995ED,
     inset 0 -1px 0 0 rgba(120, 120, 120, 0.15);
 }
 
 .dark .file-row-separator.file-row-selected {
   box-shadow:
-    inset 3px 0 0 0 #ee9b5c,
+    inset 3px 0 0 0 #5995ED,
     inset 0 -1px 0 0 rgba(120, 120, 120, 0.1);
 }
 

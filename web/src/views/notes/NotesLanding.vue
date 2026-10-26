@@ -141,7 +141,7 @@ onUnmounted(() => {
         v-model="query"
         type="text"
         :placeholder="$t('notes.landing.searchPlaceholder')"
-        class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-paper-300 dark:border-brownish-700 bg-white dark:bg-brownish-800 dark:text-brownish-50 focus:outline-none focus:ring-1 focus:ring-redish-400 focus:border-redish-400"
+        class="w-full pl-10 pr-4 py-2 text-sm rounded-lg border border-paper-300 dark:border-brownish-700 bg-white dark:bg-brownish-800 dark:text-brownish-50 focus:outline-none focus:ring-1 focus:ring-primary-100 focus:border-primary-100"
       />
     </div>
 
@@ -202,7 +202,7 @@ onUnmounted(() => {
         class="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-colors duration-150 hover:bg-paper-100 dark:hover:bg-brownish-700/50"
         @click="openNote(note)"
       >
-        <BaseIcon :path="mdiFileDocumentOutline" :size="20" class="flex-shrink-0 text-orangy-700 dark:text-orangy-400" />
+        <BaseIcon :path="mdiFileDocumentOutline" :size="20" class="flex-shrink-0 text-primary-300 dark:text-primary-50" />
         <div class="flex-1 min-w-0">
           <p class="text-sm font-medium truncate dark:text-brownish-50">{{ note.name }}</p>
           <p class="text-xs text-brownish-400 dark:text-brownish-50 mt-0.5">
