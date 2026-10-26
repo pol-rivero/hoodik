@@ -26,6 +26,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   /** Click: expand/collapse (loading children) and navigate. */
   'toggle-folder': [node: TreeNode]
+  /** Chevron click: expand/collapse without navigating. */
+  'toggle-expand': [node: TreeNode]
   /** Drag spring-loading: expand without navigating. */
   'expand-folder': [node: TreeNode]
   'file-click': [file: AppFile]
@@ -72,7 +74,9 @@ function springExpand() {
     <BaseIcon
       :path="expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
       :size="12"
-      class="flex-shrink-0 text-brownish-100"
+      class="flex-shrink-0 rounded text-brownish-100 hover:bg-brownish-600/60 hover:text-white"
+      data-testid="aside-tree-chevron"
+      @click.stop="emit('toggle-expand', node)"
     />
     <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
     <span class="truncate">{{ node.file.name }}</span>
@@ -93,6 +97,7 @@ function springExpand() {
         :active-file-id="activeFileId"
         :active-folder-id="activeFolderId"
         @toggle-folder="(n: TreeNode) => emit('toggle-folder', n)"
+        @toggle-expand="(n: TreeNode) => emit('toggle-expand', n)"
         @expand-folder="(n: TreeNode) => emit('expand-folder', n)"
         @file-click="(f: AppFile) => emit('file-click', f)"
       />

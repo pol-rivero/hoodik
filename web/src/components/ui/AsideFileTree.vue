@@ -327,16 +327,18 @@ async function expandFolder(node: TreeNode) {
   }
 }
 
-async function toggleFolder(node: TreeNode) {
-  const id = node.file.id
-
-  if (treeState.expanded.has(id)) {
-    treeState.expanded.delete(id)
+/** Chevron click: expand/collapse in place, without navigating. */
+async function toggleExpand(node: TreeNode) {
+  if (treeState.expanded.has(node.file.id)) {
+    treeState.expanded.delete(node.file.id)
   } else {
     await expandFolder(node)
   }
+}
 
-  router.push({ name: 'files', params: { file_id: id } })
+async function toggleFolder(node: TreeNode) {
+  await toggleExpand(node)
+  router.push({ name: 'files', params: { file_id: node.file.id } })
 }
 
 /** Spring-loading: a drag hovering a collapsed folder opens it in place. */
@@ -504,7 +506,9 @@ watch(
           <BaseIcon
             :path="treeState.expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
             :size="12"
-            class="flex-shrink-0 text-brownish-100"
+            class="flex-shrink-0 rounded text-brownish-100 hover:bg-brownish-600/60 hover:text-white"
+            data-testid="aside-tree-chevron"
+            @click.stop="toggleExpand(node)"
           />
           <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
           <span class="truncate">{{ node.file.name }}</span>
@@ -530,7 +534,9 @@ watch(
           <BaseIcon
             :path="treeState.expanded.has(node.file.id) ? mdiChevronDown : mdiChevronRight"
             :size="12"
-            class="flex-shrink-0 text-brownish-100"
+            class="flex-shrink-0 rounded text-brownish-100 hover:bg-brownish-600/60 hover:text-white"
+            data-testid="aside-tree-chevron"
+            @click.stop="toggleExpand(node)"
           />
           <BaseIcon :path="iconFor(node.file)" :size="14" class="flex-shrink-0 text-orangy-400" />
           <span class="truncate">{{ node.file.name }}</span>
@@ -551,6 +557,7 @@ watch(
               :active-file-id="activeFileId"
               :active-folder-id="activeFolderId"
               @toggle-folder="toggleFolder"
+              @toggle-expand="toggleExpand"
               @expand-folder="springExpand"
               @file-click="onFileClick"
             />
