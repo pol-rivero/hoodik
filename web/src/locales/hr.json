@@ -126,9 +126,12 @@
       "updatedTitle": "Obavijesti o dijeljenju su ažurirane"
     },
     "storage": {
-      "byFileType": "Po vrsti datoteke",
+      "biggestFilesFailed": "Nije moguće učitati vaše datoteke",
+      "noFiles": "Još nema datoteka",
       "showAll": "Prikaži sve ({count})",
       "showLess": "Prikaži manje",
+      "tabBiggestFiles": "Najveće datoteke",
+      "tabByFileType": "Iskorištenost po vrsti datoteke",
       "title": "Iskorištenost pohrane",
       "unlimited": "neograničeno"
     },

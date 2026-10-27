@@ -9,6 +9,10 @@ export interface TrashListResponse {
   items: EncryptedAppFile[]
 }
 
+export interface LargestFilesResponse {
+  items: EncryptedAppFile[]
+}
+
 export interface RestoredItem {
   id: string
   /** Parent the item now lives in; null is the caller's root. */

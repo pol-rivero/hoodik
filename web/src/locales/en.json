@@ -126,9 +126,12 @@
       "updatedTitle": "Sharing notifications updated"
     },
     "storage": {
-      "byFileType": "By File Type",
+      "biggestFilesFailed": "Could not load your files",
+      "noFiles": "No files yet",
       "showAll": "Show all ({count})",
       "showLess": "Show less",
+      "tabBiggestFiles": "Biggest Files",
+      "tabByFileType": "Usage by File Type",
       "title": "Storage Usage",
       "unlimited": "unlimited"
     },

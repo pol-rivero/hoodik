@@ -2,8 +2,8 @@
 //! them for only the files where the user has the file shared with him.
 
 use entity::{
-    files, numeric::Numeric, user_files, ColumnTrait, ConnectionTrait,
-    EntityTrait, Expr, Func, IntoCondition, JoinType, QueryFilter, QuerySelect, RelationTrait, Uuid,
+    files, numeric::Numeric, user_files, ColumnTrait, ConnectionTrait, EntityTrait, Expr, Func,
+    IntoCondition, JoinType, Order, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Uuid,
 };
 use error::AppResult;
 
@@ -91,5 +91,22 @@ where
             .await?;
 
         Ok(stats)
+    }
+
+    /// The user's largest owned files, biggest first. Folders and trashed
+    /// rows are left out; thumbnails are withheld.
+    pub(crate) async fn largest(&self, limit: u64) -> AppResult<Vec<AppFile>> {
+        let files = self
+            .repository
+            .compact_selector(self.user_id, true)
+            .filter(files::Column::Mime.ne("dir"))
+            .filter(files::Column::Size.is_not_null())
+            .order_by(files::Column::Size, Order::Desc)
+            .limit(limit)
+            .into_model::<AppFile>()
+            .all(self.repository.connection())
+            .await?;
+
+        Ok(files)
     }
 }

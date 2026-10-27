@@ -126,9 +126,12 @@
       "updatedTitle": "Notifications de partage mises à jour"
     },
     "storage": {
-      "byFileType": "Par type de fichier",
+      "biggestFilesFailed": "Impossible de charger vos fichiers",
+      "noFiles": "Aucun fichier pour l'instant",
       "showAll": "Tout afficher ({count})",
       "showLess": "Afficher moins",
+      "tabBiggestFiles": "Fichiers les plus volumineux",
+      "tabByFileType": "Utilisation par type de fichier",
       "title": "Utilisation du stockage",
       "unlimited": "illimité"
     },

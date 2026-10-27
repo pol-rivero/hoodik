@@ -126,9 +126,12 @@
       "updatedTitle": "Freigabe-Benachrichtigungen aktualisiert"
     },
     "storage": {
-      "byFileType": "Nach Dateityp",
+      "biggestFilesFailed": "Deine Dateien konnten nicht geladen werden",
+      "noFiles": "Noch keine Dateien",
       "showAll": "Alle anzeigen ({count})",
       "showLess": "Weniger anzeigen",
+      "tabBiggestFiles": "Größte Dateien",
+      "tabByFileType": "Nutzung nach Dateityp",
       "title": "Speichernutzung",
       "unlimited": "unbegrenzt"
     },

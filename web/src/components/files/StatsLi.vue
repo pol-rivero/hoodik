@@ -35,21 +35,27 @@ const usageColor = computed(() => {
   <!-- Sits in the aside rail, which is charcoal in both themes — the light
        step here would be measured against the wrong ground. -->
   <li v-if="Storage.stats" class="pb-3 text-center text-sm text-brownish-50">
-    {{ $t('files.stats.usedOf', { used, available }) }}
-    <div
-      v-if="Storage.stats.quota"
-      class="mx-6 mt-1.5 h-1.5 rounded-full bg-brownish-700 overflow-hidden"
-      role="progressbar"
-      :aria-valuenow="Math.round(usagePercent)"
-      aria-valuemin="0"
-      aria-valuemax="100"
+    <RouterLink
+      :to="{ name: 'account' }"
+      class="block py-1 transition-colors hover:text-white"
+      data-testid="storage-usage-link"
     >
-      <!-- min-width keeps any non-zero usage visible against a large quota -->
+      {{ $t('files.stats.usedOf', { used, available }) }}
       <div
-        class="h-full rounded-full transition-[width] duration-700"
-        :class="[usageColor, Storage.stats.used_space ? 'min-w-1.5' : '']"
-        :style="{ width: usagePercent + '%' }"
-      />
-    </div>
+        v-if="Storage.stats.quota"
+        class="mx-6 mt-1.5 h-1.5 rounded-full bg-brownish-700 overflow-hidden"
+        role="progressbar"
+        :aria-valuenow="Math.round(usagePercent)"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <!-- min-width keeps any non-zero usage visible against a large quota -->
+        <div
+          class="h-full rounded-full transition-[width] duration-700"
+          :class="[usageColor, Storage.stats.used_space ? 'min-w-1.5' : '']"
+          :style="{ width: usagePercent + '%' }"
+        />
+      </div>
+    </RouterLink>
   </li>
 </template>

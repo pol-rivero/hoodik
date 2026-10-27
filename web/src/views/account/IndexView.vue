@@ -16,7 +16,7 @@ const disableTfaModal = ref(false)
 const enableTfaModal = ref(false)
 </script>
 <template>
-  <LayoutAuthenticatedWithLoader v-slot="{ authenticated }">
+  <LayoutAuthenticatedWithLoader v-slot="{ authenticated, keypair }">
     <EnableTfaModal
       v-if="enableTfaModal && authenticated"
       @confirm="enableTfaModal = false"
@@ -40,7 +40,7 @@ const enableTfaModal = ref(false)
               @disable-tfa="disableTfaModal = true"
               @enable-tfa="enableTfaModal = true"
             />
-            <StorageStats class="w-full lg:w-5/12" />
+            <StorageStats class="w-full lg:w-5/12" :kp="keypair" />
           </div>
         </div>
 

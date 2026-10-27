@@ -13,6 +13,7 @@ import type {
   AppFileEncryptedPart,
   AppFileUnencryptedPart,
   StorageStatsResponse,
+  LargestFilesResponse,
   Rename,
   EncryptedRename,
   DeleteManyFiles,
@@ -322,6 +323,26 @@ export async function stats(): Promise<StorageStatsResponse> {
   const response = await Api.post<undefined, StorageStatsResponse>(`/api/storage/stats`)
 
   return response.body || { stats: [], used_space: 0, quota: undefined }
+}
+
+/**
+ * The caller's largest owned files, biggest first. Folders and trashed files
+ * are left out, and thumbnails come through `has_thumbnail` only.
+ */
+export async function largest(kp: KeyPair, limit = 50): Promise<AppFile[]> {
+  const response = await Api.get<LargestFilesResponse>('/api/storage/largest', { limit })
+  const items = response.body?.items ?? []
+
+  return Promise.all(
+    items.map(async (item) => {
+      const row = { ...item, name: item.id } as AppFile
+      try {
+        return { ...row, ...(await decrypt(item, kp.wrappingPrivate || (kp.input as string))) }
+      } catch {
+        return row
+      }
+    })
+  )
 }
 
 /**

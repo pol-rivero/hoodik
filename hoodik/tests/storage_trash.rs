@@ -1045,3 +1045,28 @@ async fn deleting_a_user_purges_their_trash() {
 
     context.config.app.cleanup();
 }
+
+#[actix_web::test]
+async fn largest_lists_owned_files_biggest_first_without_trash_or_folders() {
+    let context =
+        context::Context::mock_with_data_dir(Some("../data/test-trash-largest".to_string())).await;
+    let app = test::init_service(server::app(context.clone())).await;
+    register_user!(app, context, alice, "alice@example.com");
+    register_user!(app, context, bob, "bob@example.com");
+
+    let dir = folder(&app, &alice, "docs", None).await;
+    let small = upload(&app, &alice, "a", Some(dir.id)).await;
+    let big = upload(&app, &alice, "a much longer name", None).await;
+    let trashed = upload(&app, &alice, "the longest name of them all", None).await;
+    upload(&app, &bob, "bob's even longer file name here", None).await;
+    assert_eq!(delete(&app, &alice, trashed.id).await, StatusCode::NO_CONTENT);
+
+    let (status, body) = get(&app, &alice, "/api/storage/largest").await;
+    assert_eq!(status, StatusCode::OK, "{body}");
+    let items: Vec<AppFile> = serde_json::from_value(body["items"].clone()).unwrap();
+    let ids: Vec<Uuid> = items.iter().map(|f| f.id).collect();
+    assert_eq!(ids, vec![big.id, small.id]);
+
+    let (_, body) = get(&app, &alice, "/api/storage/largest?limit=1").await;
+    assert_eq!(body["items"].as_array().unwrap().len(), 1);
+}

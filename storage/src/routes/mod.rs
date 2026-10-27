@@ -11,6 +11,7 @@ pub mod download;
 pub(crate) mod content_tokens;
 pub mod extra_tokens;
 pub mod index;
+pub mod largest;
 pub mod metadata;
 pub mod move_many;
 pub mod name_hash;
@@ -54,6 +55,7 @@ pub fn configure(cfg: &mut actix_web::web::ServiceConfig) {
     cfg.service(trash::restore);
     cfg.service(trash::purge);
     cfg.service(trash::empty);
+    cfg.service(largest::largest);
     cfg.service(chunk_urls::download_urls);
     cfg.service(chunk_urls::upload_urls);
     cfg.service(chunk_urls::finalize);
