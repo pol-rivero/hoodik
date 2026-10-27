@@ -5,7 +5,7 @@ import type { Preview } from '!/preview'
 import { decodeText, TEXT_PREVIEW_MAX_BYTES } from '!/preview/text'
 import { formatSize } from '!/index'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
-import SpinnerIcon from '../ui/SpinnerIcon.vue'
+import PreviewLoading from './PreviewLoading.vue'
 
 const props = defineProps<{
   modelValue: Preview
@@ -111,12 +111,7 @@ watch(() => props.modelValue, load, { immediate: true })
     </div>
   </div>
 
-  <div v-else class="flex flex-col justify-center items-center gap-2 w-full flex-1">
-    <SpinnerIcon />
-    <span v-if="downloadPercent > 0" class="text-sm text-brownish-50">
-      {{ downloadPercent }}%
-    </span>
-  </div>
+  <PreviewLoading v-else :progress="downloadPercent" />
 </template>
 
 <style scoped>

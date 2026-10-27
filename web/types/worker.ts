@@ -63,6 +63,15 @@ export type DownloadBytesMessage = {
 }
 
 /**
+ * Cumulative bytes received so far for a whole-file [[DownloadBytesMessage]],
+ * sent ahead of the final reply so previews can show progress.
+ */
+export type DownloadBytesProgressMessage = {
+  request: string
+  bytes: number
+}
+
+/**
  * Reply to a [[DownloadBytesMessage]]. Exactly one of `bytes` or `error`.
  */
 export type DownloadBytesResponseMessage = {

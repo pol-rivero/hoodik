@@ -5,8 +5,11 @@ import Api from '../services/api'
 import { capabilitiesStore } from '../services/shares/capabilities'
 import { clearChunkUrlCache } from '../services/storage/download/direct'
 import { forgetUpload } from '../services/storage/upload/direct'
-import { downloadChunk } from '../services/storage/download/sync'
-import { resolveDownloadBytes } from '../services/storage/download/worker'
+import { downloadAndDecrypt, downloadChunk } from '../services/storage/download/sync'
+import {
+  reportDownloadBytesProgress,
+  resolveDownloadBytes
+} from '../services/storage/download/worker'
 import { uploadChunk } from '../services/storage/upload/sync'
 import { pushUploadToWorker, startFileDownload } from '../services/storage/workers'
 import * as meta from '../services/storage/meta'
@@ -428,6 +431,25 @@ describe('in-memory reads', () => {
 
     await expect(first).resolves.toEqual(new Uint8Array([0]))
     await expect(second).resolves.toEqual(new Uint8Array([1]))
+  })
+
+  // A preview of a large file otherwise sits on a bare spinner until the
+  // whole thing has arrived.
+  it('forwards whole-file progress from the worker to the caller', async () => {
+    const { posted } = stubWorker('DOWNLOAD')
+
+    const reported: number[] = []
+    const pending = downloadAndDecrypt(file(), (bytes) => reported.push(bytes))
+    await until(() => posted.length === 1)
+
+    const request = posted[0].message.request
+    reportDownloadBytesProgress({ request, bytes: 10 })
+    reportDownloadBytesProgress({ request: 'someone-else', bytes: 99 })
+    reportDownloadBytesProgress({ request, bytes: 20 })
+    resolveDownloadBytes({ request, bytes: new Uint8Array([1, 2]) })
+
+    await expect(pending).resolves.toEqual(new Uint8Array([1, 2]))
+    expect(reported).toEqual([10, 20])
   })
 
   it('falls back to this thread when the worker reports a failure', async () => {

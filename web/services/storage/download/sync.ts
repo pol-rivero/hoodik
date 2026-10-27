@@ -37,19 +37,23 @@ async function specFor(file: AppFile): Promise<DownloadSpec> {
  * own reasons — it died, it was never spawned — falls back rather than failing
  * the read.
  */
-async function fetchBytes(file: AppFile, chunk?: number): Promise<Uint8Array> {
+async function fetchBytes(
+  file: AppFile,
+  chunk?: number,
+  onBytes?: (bytes: number) => void
+): Promise<Uint8Array> {
   const spec = await specFor(file)
 
   if (downloadWorkerReady()) {
     try {
-      return await downloadBytesInWorker(spec, new Api().toJson(), chunk)
+      return await downloadBytesInWorker(spec, new Api().toJson(), chunk, onBytes)
     } catch (err) {
       logger.warn('[download] worker could not serve the bytes, falling back:', err)
     }
   }
 
   try {
-    return await runDownloader(spec, chunk)
+    return await runDownloader(spec, chunk, onBytes)
   } catch (err) {
     // A manifest can outlive the content it described: another session — or a
     // share editor — replaces the file, and the cached URLs keep pointing at
@@ -61,7 +65,7 @@ async function fetchBytes(file: AppFile, chunk?: number): Promise<Uint8Array> {
     logger.warn('[download] direct manifest failed, evicting it and relaying:', err)
     evictChunkUrls(file.id)
 
-    return runDownloader({ ...spec, directUrls: undefined }, chunk)
+    return runDownloader({ ...spec, directUrls: undefined }, chunk, onBytes)
   }
 }
 
@@ -102,29 +106,7 @@ export async function downloadAndDecrypt(
   file: AppFile,
   onBytes?: (bytes: number) => void
 ): Promise<Uint8Array> {
-  // Byte progress only exists on the local route; the worker reports it for
-  // the transfers the queue owns, and these reads are short-lived enough that
-  // a caller watching them gets one final number rather than none.
-  if (downloadWorkerReady()) {
-    const bytes = await fetchBytes(file)
-    onBytes?.(bytes.length)
-    return bytes
-  }
-
-  const spec = await specFor(file)
-
-  try {
-    return await runDownloader(spec, undefined, onBytes)
-  } catch (err) {
-    // Same healing as `fetchBytes`: a stale manifest must not pin every read
-    // of this file to the same failure until its URLs expire.
-    if (!spec.directUrls) throw err
-
-    logger.warn('[download] direct manifest failed, evicting it and relaying:', err)
-    evictChunkUrls(file.id)
-
-    return runDownloader({ ...spec, directUrls: undefined }, undefined, onBytes)
-  }
+  return fetchBytes(file, undefined, onBytes)
 }
 
 /**

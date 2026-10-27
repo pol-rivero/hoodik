@@ -873,6 +873,7 @@
     "downloadFile": "Datei herunterladen",
     "exportPdf": "PDF exportieren",
     "fileDetails": "Dateidetails",
+    "loading": "Wird geladen… {progress} %",
     "markdown": {
       "conflictBody": "Der Server hat einen nicht abgeschlossenen Speichervorgang für diese Notiz aus einer anderen Sitzung. Wählen Sie {overwrite}, um deren ausstehende Änderung zu verwerfen und Ihre Version zu speichern, oder {cancel}, um Ihre lokalen Änderungen zu verwerfen und den anderen Speichervorgang abschließen zu lassen.",
       "conflictOverwrite": "Entfernte Änderung verwerfen und überschreiben",
@@ -921,8 +922,7 @@
       "title": "Versionsverlauf"
     },
     "video": {
-      "loadError": "Video konnte nicht geladen werden: {error}",
-      "loading": "Wird geladen… {progress} %"
+      "loadError": "Video konnte nicht geladen werden: {error}"
     },
     "zoomFit": "Bild einpassen",
     "zoomIn": "Bild vergrößern",

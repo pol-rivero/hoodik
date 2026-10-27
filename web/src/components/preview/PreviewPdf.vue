@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onUnmounted } from 'vue'
 import type { Preview } from '!/preview'
-import SpinnerIcon from '../ui/SpinnerIcon.vue'
+import PreviewLoading from './PreviewLoading.vue'
 
 const props = defineProps<{
   modelValue: Preview
@@ -43,10 +43,5 @@ onUnmounted(() => {
     :src="blobUrl"
     style="width: 100%; flex: 1; min-height: 0; border: none"
   />
-  <div v-else class="flex flex-col justify-center items-center gap-2 w-full flex-1">
-    <SpinnerIcon />
-    <span v-if="downloadPercent > 0" class="text-sm text-brownish-50">
-      {{ downloadPercent }}%
-    </span>
-  </div>
+  <PreviewLoading v-else :progress="downloadPercent" />
 </template>

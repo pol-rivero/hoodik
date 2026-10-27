@@ -2,7 +2,10 @@ import * as logger from '!/logger'
 
 import type { DownloadSpec } from './downloader'
 import type { ApiTransfer } from '../../api'
-import type { DownloadBytesResponseMessage } from '../../../types'
+import type {
+  DownloadBytesProgressMessage,
+  DownloadBytesResponseMessage
+} from '../../../types'
 
 /**
  * Requests waiting on the download worker, keyed by the id sent with them.
@@ -13,7 +16,11 @@ import type { DownloadBytesResponseMessage } from '../../../types'
  */
 const waiting = new Map<
   string,
-  { resolve: (bytes: Uint8Array) => void; reject: (error: Error) => void }
+  {
+    resolve: (bytes: Uint8Array) => void
+    reject: (error: Error) => void
+    onBytes?: (bytes: number) => void
+  }
 >()
 
 let counter = 0
@@ -51,6 +58,13 @@ export function resolveDownloadBytes(response: DownloadBytesResponseMessage): vo
 }
 
 /**
+ * Forward a progress update to whoever is waiting on that request.
+ */
+export function reportDownloadBytesProgress(response: DownloadBytesProgressMessage): void {
+  waiting.get(response.request)?.onBytes?.(response.bytes)
+}
+
+/**
  * Fail every outstanding request. The worker died, and a promise that never
  * settles is worse than one that rejects.
  */
@@ -72,12 +86,13 @@ export function failPendingDownloads(reason: string): void {
 export function downloadBytesInWorker(
   spec: DownloadSpec,
   api: ApiTransfer,
-  chunk?: number
+  chunk?: number,
+  onBytes?: (bytes: number) => void
 ): Promise<Uint8Array> {
   const request = `${spec.id}:${chunk ?? 'all'}:${counter++}`
 
   return new Promise<Uint8Array>((resolve, reject) => {
-    waiting.set(request, { resolve, reject })
+    waiting.set(request, { resolve, reject, onBytes })
 
     try {
       window.DOWNLOAD.postMessage({

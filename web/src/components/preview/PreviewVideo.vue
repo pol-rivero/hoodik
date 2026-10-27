@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onUnmounted } from 'vue'
 import type { Preview } from '!/preview'
-import SpinnerIcon from '../ui/SpinnerIcon.vue'
+import PreviewLoading from './PreviewLoading.vue'
 import * as logger from '!/logger'
 
 const props = defineProps<{
@@ -231,13 +231,7 @@ onUnmounted(cleanup)
 
 <template>
   <!-- Full-download loading state: shown until blob URL is ready -->
-  <div v-if="!blobUrl && !error" class="flex flex-col items-center justify-center w-full h-full gap-4">
-    <SpinnerIcon />
-    <div class="text-sm text-brownish-50">{{ $t('preview.video.loading', { progress }) }}</div>
-    <div class="w-64 h-2 bg-brownish-700 rounded-full overflow-hidden">
-      <div class="h-full bg-greeny-400 transition-all" :style="{ width: `${progress}%` }" />
-    </div>
-  </div>
+  <PreviewLoading v-if="!blobUrl && !error" :progress="progress" />
 
   <div v-else-if="error" class="flex flex-col items-center justify-center w-full h-full gap-2 text-redish-100">
     <span>{{ $t('preview.video.loadError', { error }) }}</span>

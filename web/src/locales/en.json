@@ -873,6 +873,7 @@
     "downloadFile": "Download file",
     "exportPdf": "Export PDF",
     "fileDetails": "File details",
+    "loading": "Loading… {progress}%",
     "markdown": {
       "conflictBody": "The server has an unfinished save for this note from another session. Choose {overwrite} to drop their pending edit and save your version, or {cancel} to drop your local changes and let the other save finish.",
       "conflictOverwrite": "Discard remote and overwrite",
@@ -921,8 +922,7 @@
       "title": "Version history"
     },
     "video": {
-      "loadError": "Could not load video: {error}",
-      "loading": "Loading… {progress}%"
+      "loadError": "Could not load video: {error}"
     },
     "zoomFit": "Fit image to screen",
     "zoomIn": "Increase image size",

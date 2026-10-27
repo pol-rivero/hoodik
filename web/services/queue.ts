@@ -11,7 +11,11 @@ import type {
 import { ref } from 'vue'
 import * as logger from '!/logger'
 import * as meta from './storage/meta'
-import { failPendingDownloads, resolveDownloadBytes } from './storage/download/worker'
+import {
+  failPendingDownloads,
+  reportDownloadBytesProgress,
+  resolveDownloadBytes
+} from './storage/download/worker'
 
 export const store = defineStore('queue', () => {
   const uploading = ref<IntervalType>()
@@ -80,6 +84,10 @@ export const store = defineStore('queue', () => {
           // value, not queued transfers.
           if (event.data.type === 'download-bytes') {
             resolveDownloadBytes(event.data.response)
+          }
+
+          if (event.data.type === 'download-bytes-progress') {
+            reportDownloadBytesProgress(event.data.response)
           }
         }
 

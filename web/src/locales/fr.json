@@ -873,6 +873,7 @@
     "downloadFile": "Télécharger le fichier",
     "exportPdf": "Exporter en PDF",
     "fileDetails": "Détails du fichier",
+    "loading": "Chargement… {progress} %",
     "markdown": {
       "conflictBody": "Le serveur a un enregistrement inachevé de cette note provenant d’une autre session. Choisissez {overwrite} pour abandonner sa modification en attente et enregistrer votre version, ou {cancel} pour abandonner vos modifications locales et laisser l’autre enregistrement se terminer.",
       "conflictOverwrite": "Abandonner la version distante et écraser",
@@ -921,8 +922,7 @@
       "title": "Historique des versions"
     },
     "video": {
-      "loadError": "Impossible de charger la vidéo : {error}",
-      "loading": "Chargement… {progress} %"
+      "loadError": "Impossible de charger la vidéo : {error}"
     },
     "zoomFit": "Ajuster l'image à l'écran",
     "zoomIn": "Agrandir l'image",

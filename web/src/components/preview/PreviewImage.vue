@@ -4,7 +4,7 @@ import BaseButton from '@/components/ui/BaseButton.vue'
 import { computed, ref, watch } from 'vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 import type { Preview } from '!/preview'
-import SpinnerIcon from '../ui/SpinnerIcon.vue'
+import PreviewLoading from './PreviewLoading.vue'
 import { heicToJpegBlob } from '!/heic'
 
 const props = defineProps<{
@@ -161,12 +161,7 @@ watch(
       :height="scaleH"
       :width="scaleW"
     />
-    <div v-else class="flex flex-col justify-center items-center gap-2 w-full h-full">
-      <SpinnerIcon />
-      <span v-if="downloadPercent > 0" class="text-sm text-brownish-50">
-        {{ downloadPercent }}%
-      </span>
-    </div>
+    <PreviewLoading v-else :progress="downloadPercent" />
 
     <!-- While the thumbnail stands in, the percent rides on top of it so
          the viewer can tell the real image is still on its way. -->

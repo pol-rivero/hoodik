@@ -873,6 +873,7 @@
     "downloadFile": "Preuzmi datoteku",
     "exportPdf": "Izvezi PDF",
     "fileDetails": "Detalji datoteke",
+    "loading": "Učitavanje… {progress}%",
     "markdown": {
       "conflictBody": "Server ima nedovršeno spremanje ove bilješke iz druge sesije. Odaberi {overwrite} da odbaciš njihovu izmjenu i spremiš svoju verziju, ili {cancel} da odbaciš svoje lokalne izmjene i pustiš da se drugo spremanje dovrši.",
       "conflictOverwrite": "Odbaci udaljeno i prepiši",
@@ -921,8 +922,7 @@
       "title": "Povijest verzija"
     },
     "video": {
-      "loadError": "Video nije bilo moguće učitati: {error}",
-      "loading": "Učitavanje… {progress}%"
+      "loadError": "Video nije bilo moguće učitati: {error}"
     },
     "zoomFit": "Prilagodi sliku zaslonu",
     "zoomIn": "Povećaj sliku",

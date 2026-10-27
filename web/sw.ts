@@ -12,6 +12,7 @@ import * as logger from '!/logger'
 import type { ApiTransfer, ErrorResponse } from './services/api'
 import type {
   DownloadBytesMessage,
+  DownloadBytesProgressMessage,
   DownloadBytesResponseMessage,
   DownloadCompletedResponseMessage,
   DownloadFileMessage,
@@ -110,7 +111,14 @@ async function handleDownloadBytes(
     const bytes =
       chunk === undefined
         ? await downloader.download(
-            () => {},
+            (progressJson: string) => {
+              const progress = JSON.parse(progressJson)
+              if (progress.type !== 'download') return
+              postMessage({
+                type: 'download-bytes-progress',
+                response: { request, bytes: progress.bytes_downloaded } as DownloadBytesProgressMessage
+              })
+            },
             (fileId: string) => self.canceled?.download?.includes(fileId) ?? false
           )
         : await downloader.downloadChunk(chunk, undefined)
