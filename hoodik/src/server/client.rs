@@ -16,8 +16,13 @@ const CACHE_STATIC: &str = "public, max-age=3600";
 /// cached stale shell references hashed chunks that no longer exist.
 const CACHE_SHELL: &str = "no-cache";
 
+/// The transfer worker is emitted at a fixed, unhashed URL, so it changes on
+/// deploy like the shell does. A cached copy would pair an old worker with a
+/// new page and silently drop any message the old one doesn't speak.
+const WORKER: &str = "sw.js";
+
 fn cache_control(filename: &str) -> &'static str {
-    if filename.ends_with(".html") {
+    if filename.ends_with(".html") || filename == WORKER {
         CACHE_SHELL
     } else if filename.starts_with("assets/") {
         CACHE_HASHED
