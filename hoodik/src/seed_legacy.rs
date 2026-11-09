@@ -140,6 +140,7 @@ async fn main() {
         trashed_at: ActiveValue::NotSet,
         trash_root_id: ActiveValue::NotSet,
         purge_at: ActiveValue::NotSet,
+        shortcut_target_id: ActiveValue::NotSet,
     })
     .exec_without_returning(&db)
     .await

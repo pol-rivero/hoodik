@@ -19,7 +19,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { isPreviewable, isMarkdownFile } from '!/preview'
-import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { SHARED_WITH_ME_DIR_ID, isBrokenShortcut, isShortcut } from '!/storage'
+import { notification } from '!/notify'
+import { fileOpenRoute } from '@/components/files/browser/fileMenuItems'
 import { activeDrag, isInternalFileDrag } from '!/storage/dragMove'
 import { store as uploadStore } from '!/storage/upload'
 import { useFolderDropTarget } from '@/composables/useFolderDropTarget'
@@ -214,6 +216,10 @@ const doubleClick = (event: MouseEvent) => {
 const open = () => {
   if (isDir.value) {
     router.push({ name: 'files', params: { file_id: props.file.id } })
+  } else if (isShortcut(props.file)) {
+    const route = fileOpenRoute(props.file)
+    if (route) router.push(route)
+    else notification(t('files.shortcut.broken'), undefined, 'warn')
   } else {
     detailsOrPreview()
   }
@@ -378,7 +384,13 @@ const drop = (e: DragEvent) => {
             icon-class="text-orangy-800 dark:text-orangy-400"
             data-testid="shared-with-me-folder-icon"
           />
-          <FileIconTile v-else :mime="file.mime" tile-class="w-6 h-6 mr-2" />
+          <FileIconTile
+            v-else
+            :mime="file.mime"
+            :target-mime="file.shortcut_target_mime"
+            tile-class="w-6 h-6 mr-2"
+            :title="isBrokenShortcut(file) ? $t('files.shortcut.broken') : undefined"
+          />
         </FileThumbnail>
 
         <TruncatedSpan :text="fileName" />

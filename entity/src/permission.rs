@@ -3,7 +3,7 @@
 //! `can_reshare`, `can_fork`, `can_delete_file`); no ad-hoc role checks.
 //! Lives in `entity/` to avoid a `shares → storage` crate cycle.
 
-use error::AppResult;
+use error::{AppResult, Error};
 use sea_orm::ConnectionTrait;
 
 use crate::{
@@ -76,6 +76,29 @@ pub async fn permission(
         .await?;
 
     Ok(map_row(row.as_ref()))
+}
+
+/// Refuse a shortcut target the caller cannot read, one that is in the trash,
+/// or one that is itself a shortcut (chains would let a cycle form).
+pub async fn require_shortcut_target(
+    db: &impl ConnectionTrait,
+    target_id: Uuid,
+    user_id: Uuid,
+) -> AppResult<()> {
+    if !permission(db, target_id, user_id).await?.can_read() {
+        return Err(Error::NotFound("shortcut_target_not_found".to_string()));
+    }
+
+    let target = files::Entity::find_by_id(target_id)
+        .one(db)
+        .await?
+        .ok_or_else(|| Error::NotFound("shortcut_target_not_found".to_string()))?;
+
+    if target.mime == files::SHORTCUT_MIME {
+        return Err(Error::BadRequest("shortcut_target_is_shortcut".to_string()));
+    }
+
+    Ok(())
 }
 
 /// Batch variant for routes that act on many files at once (`move_many`).

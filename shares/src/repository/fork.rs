@@ -74,7 +74,7 @@ impl Repository<'_> {
                 ));
             }
         }
-        if mime == "dir" {
+        if mime == "dir" || mime == files::SHORTCUT_MIME {
             return Err(Error::BadRequest("cannot_fork_directory".to_string()));
         }
 
@@ -96,7 +96,7 @@ impl Repository<'_> {
             .one(&self.context.db)
             .await?
             .ok_or_else(|| Error::NotFound("file_not_found".to_string()))?;
-        if source.mime == "dir" {
+        if source.mime == "dir" || source.mime == files::SHORTCUT_MIME {
             return Err(Error::BadRequest("cannot_fork_directory".to_string()));
         }
 
@@ -175,6 +175,7 @@ impl Repository<'_> {
             trashed_at: ActiveValue::Set(None),
             trash_root_id: ActiveValue::Set(None),
             purge_at: ActiveValue::Set(None),
+            shortcut_target_id: ActiveValue::Set(None),
         };
         files::Entity::insert(file_active)
             .exec_without_returning(&tx)

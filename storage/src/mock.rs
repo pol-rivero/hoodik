@@ -79,6 +79,7 @@ pub async fn create_file(
         content_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let (am, _, tags, content, digests, _, _) = file.into_active_model()?;

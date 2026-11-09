@@ -3,6 +3,9 @@ use fs::prelude::*;
 use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Mime of a shortcut row. Like a folder it has no content of its own.
+pub const SHORTCUT_MIME: &str = "shortcut";
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "files")]
 pub struct Model {
@@ -71,11 +74,14 @@ pub struct Model {
     /// When the group becomes due for purge, fixed at trash time. `0` means
     /// due now. A trashed row is restorable only while this is in the future.
     pub purge_at: Option<i64>,
+    /// The file or folder a `mime = "shortcut"` row points at. NULL on every
+    /// other row; purging the target deletes its shortcuts.
+    pub shortcut_target_id: Option<Uuid>,
 }
 
 impl IntoFilename for Model {
     fn filename(&self) -> AppResult<Filename> {
-        if self.mime.as_str() == "dir" {
+        if self.mime.as_str() == "dir" || self.mime.as_str() == SHORTCUT_MIME {
             return Err(Error::BadRequest(
                 "cannot_get_filename_from_dir".to_string(),
             ));

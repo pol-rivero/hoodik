@@ -10,7 +10,7 @@ use ::error::{AppResult, Error};
 use chrono::Utc;
 use entity::{
     file_tokens::{DigestTags, SearchTags},
-    files::ActiveModel as ActiveModelFile,
+    files::{ActiveModel as ActiveModelFile, SHORTCUT_MIME},
     option_string_to_uuid, ActiveValue, Uuid,
 };
 use serde::{Deserialize, Serialize};
@@ -67,6 +67,16 @@ pub struct CreateFile {
     /// Whether this file's content can be replaced (e.g. markdown notes).
     /// Defaults to `false` for regular uploads.
     pub editable: Option<bool>,
+    /// The file or folder a shortcut points at. Required when `mime` is
+    /// `"shortcut"`, refused otherwise.
+    pub shortcut_target_id: Option<String>,
+}
+
+impl CreateFile {
+    /// Folders and shortcuts carry no content, so no size or chunk count.
+    fn has_no_content(&self) -> bool {
+        matches!(self.mime.as_deref(), Some("dir" | SHORTCUT_MIME))
+    }
 }
 
 impl Validation for CreateFile {
@@ -77,9 +87,7 @@ impl Validation for CreateFile {
             rule_required!(encrypted_name),
             rule_required!(mime),
             Rule::new("size", |obj: &CreateFile, error| {
-                let dir_mime = Some("dir".to_string());
-
-                if obj.mime.as_ref() == dir_mime.as_ref() {
+                if obj.has_no_content() {
                     if obj.size.is_some() {
                         return error.add("not_for_dir");
                     }
@@ -100,9 +108,7 @@ impl Validation for CreateFile {
             // by the frontend, but is better because the actual chunk
             // sizes are not exactly 1MB because of the encryption overhead.
             Rule::new("chunks", |obj: &CreateFile, error| {
-                let dir_mime = Some("dir".to_string());
-
-                if obj.mime.as_ref() == dir_mime.as_ref() {
+                if obj.has_no_content() {
                     if obj.chunks.is_some() {
                         return error.add("not_for_dir");
                     }
@@ -132,6 +138,15 @@ impl Validation for CreateFile {
                     // }
                 } else {
                     error.add("required")
+                }
+            }),
+            Rule::new("shortcut_target_id", |obj: &CreateFile, error| {
+                let is_shortcut = obj.mime.as_deref() == Some(SHORTCUT_MIME);
+                match &obj.shortcut_target_id {
+                    None if is_shortcut => error.add("required"),
+                    Some(_) if !is_shortcut => error.add("only_for_shortcut"),
+                    Some(v) if Uuid::parse_str(v).is_err() => error.add("invalid_uuid"),
+                    _ => {}
                 }
             }),
             Rule::new("file_modified_at", |obj: &CreateFile, error| {
@@ -193,11 +208,12 @@ impl CreateFile {
 
         let now = Utc::now().naive_utc();
 
-        let chunks_stored = if data.mime != Some("dir".to_string()) {
-            Some(0)
-        } else {
-            None
-        };
+        let chunks_stored = if data.has_no_content() { None } else { Some(0) };
+        // A shortcut is complete the moment it exists; without this every
+        // client would read it as an upload still in flight.
+        let finished_upload_at = (data.mime.as_deref() == Some(SHORTCUT_MIME))
+            .then(|| now.and_utc().timestamp());
+        let shortcut_target_id = option_string_to_uuid(data.shortcut_target_id.clone());
 
         let file_id = option_string_to_uuid(data.file_id.clone());
 
@@ -229,7 +245,7 @@ impl CreateFile {
                 cipher: ActiveValue::Set(data.cipher.unwrap_or_else(|| "ascon128a".to_string())),
                 editable: ActiveValue::Set(data.editable.unwrap_or(false)),
                 created_at: ActiveValue::Set(now.and_utc().timestamp()),
-                finished_upload_at: ActiveValue::Set(None),
+                finished_upload_at: ActiveValue::Set(finished_upload_at),
                 // New files start at v1. Chunks land in `v1/` directly until
                 // the first finalize commits them; pending_version stays NULL
                 // for the initial upload (the two-phase swap kicks in only
@@ -245,6 +261,7 @@ impl CreateFile {
                 trashed_at: ActiveValue::Set(None),
                 trash_root_id: ActiveValue::Set(None),
                 purge_at: ActiveValue::Set(None),
+                shortcut_target_id: ActiveValue::Set(shortcut_target_id),
             },
             data.encrypted_key.unwrap(),
             SearchTags::new(data.search_tokens_root, data.search_tokens_file),

@@ -10,6 +10,7 @@ import {
   mdiEye,
   mdiInformationOutline,
   mdiFolderMove,
+  mdiLinkVariantPlus,
   mdiShareVariantOutline
 } from '@mdi/js'
 import { useCapability } from '@/composables/useCapability'
@@ -26,6 +27,7 @@ import {
   fileCapabilities,
   fileMenuItems,
   fileOpenRoute,
+  canAddShortcut,
   parentFolderRoute,
   selectionMenuItems,
   type BlankMenuAction,
@@ -44,7 +46,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 import type { AppFile } from 'types'
 import { isPreviewable, isMarkdownFile } from '!/preview'
-import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { SHARED_WITH_ME_DIR_ID, isShortcut } from '!/storage'
 import { beginFileDrag, endFileDrag, isInternalFileDrag } from '!/storage/dragMove'
 
 const props = defineProps<{
@@ -75,6 +77,7 @@ const emits = defineEmits<{
   (event: 'download-many'): void
   (event: 'download', file: AppFile): void
   (event: 'move-all'): void
+  (event: 'shortcut-all'): void
   (event: 'remove-all'): void
   (event: 'remove', file: AppFile): void
   (event: 'rename', file: AppFile): void
@@ -436,6 +439,10 @@ const showMoveAll = computed(() => {
   return selectedRows.value.length > 0
 })
 
+const showShortcutAll = computed(
+  () => selectedRows.value.length > 0 && selectedRows.value.every(canAddShortcut)
+)
+
 const showDownloadMany = computed(() => {
   const hasIncompleteUploads = selectedRows.value.some(
     (item) => item.mime !== 'dir' && !item.finished_upload_at
@@ -552,6 +559,10 @@ const runFileAction = (action: FileMenuAction, file: AppFile) => {
       anchorId.value = file.id
       setSelection(new Set([file.id]))
       return emits('move-all')
+    case 'shortcut':
+      anchorId.value = file.id
+      setSelection(new Set([file.id]))
+      return emits('shortcut-all')
     case 'download':
       return emits('download', file)
     case 'rename':
@@ -575,6 +586,8 @@ const runSelectionAction = (action: SelectionMenuAction) => {
       return emits('download-many')
     case 'move-all':
       return emits('move-all')
+    case 'shortcut-all':
+      return emits('shortcut-all')
     case 'remove-all':
       return emits('remove-all')
   }
@@ -771,6 +784,17 @@ const sizes = {
       @click="() => emits('move-all')"
     />
 
+    <BaseButton
+      :title="$t('files.shortcut.add')"
+      data-testid="shortcut-selected"
+      :iconSize="20"
+      :xs="true"
+      :icon="mdiLinkVariantPlus"
+      color="light"
+      v-if="showShortcutAll"
+      @click="() => emits('shortcut-all')"
+    />
+
     <span class="p-1" v-if="showMoveAll && singleSelected">|</span>
 
     <BaseButton
@@ -813,6 +837,7 @@ const sizes = {
         singleSelected &&
         sharingEnabled &&
         singleSelected.id !== SHARED_WITH_ME_DIR_ID &&
+        !isShortcut(singleSelected) &&
         (
           singleSelected.is_owner === false ||
           singleSelected.mime === 'dir' ||

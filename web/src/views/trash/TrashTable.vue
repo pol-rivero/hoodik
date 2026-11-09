@@ -290,7 +290,11 @@ const sizes = {
         </div>
 
         <div :class="sizes.name" :title="item.name">
-          <FileIconTile :mime="item.mime" tile-class="w-6 h-6 mr-2" />
+          <FileIconTile
+            :mime="item.mime"
+            :target-mime="item.shortcut_target_mime"
+            tile-class="w-6 h-6 mr-2"
+          />
           <div class="min-w-0 flex flex-col">
             <div class="min-w-0 flex items-center">
               <TruncatedSpan :text="item.name" />

@@ -46,6 +46,7 @@ async fn uploaded_file(
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -299,6 +300,7 @@ async fn finalize_refuses_a_file_with_chunks_missing() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()

@@ -15,7 +15,7 @@ pub(crate) async fn stats(claims: Claims, context: web::Data<Context>) -> AppRes
     // One query for both: a second join for `used_space` would double the cost.
     let mut stats = repository.query(claims.sub).stats().await?;
     let used_space = stats.iter().map(|s| s.size).sum();
-    stats.retain(|s| s.mime != "dir");
+    stats.retain(|s| s.mime != "dir" && s.mime != entity::files::SHORTCUT_MIME);
 
     Ok(HttpResponse::Ok().json(Response {
         stats,

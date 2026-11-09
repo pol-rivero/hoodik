@@ -41,6 +41,8 @@ pub struct UploadMultikeyBody {
     /// the create route's do.
     pub digest_tokens_root: Option<Vec<String>>,
     pub digest_tokens_file: Option<Vec<String>>,
+    /// Target of a `mime = "shortcut"` row; refused on any other mime.
+    pub shortcut_target_id: Option<String>,
     pub member_keys: Option<Vec<MemberKey>>,
     pub members_list_snapshot: Option<MembersListSnapshot>,
     pub event_signature: Option<String>,
@@ -72,6 +74,15 @@ impl Validation for UploadMultikeyBody {
             rule_required!(chunks),
             rule_required!(event_signature),
             rule_required!(timestamp),
+            Rule::new("shortcut_target_id", |obj: &UploadMultikeyBody, error| {
+                let is_shortcut = obj.mime.as_deref() == Some(entity::files::SHORTCUT_MIME);
+                match &obj.shortcut_target_id {
+                    None if is_shortcut => error.add("required"),
+                    Some(_) if !is_shortcut => error.add("only_for_shortcut"),
+                    Some(v) if entity::Uuid::parse_str(v).is_err() => error.add("invalid_uuid"),
+                    _ => {}
+                }
+            }),
         ]
     }
 }

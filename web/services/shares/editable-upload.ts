@@ -109,6 +109,7 @@ export async function uploadIntoSharedFolder(
       search_tokens_file: args.payload.searchTokensFile,
       content_tokens_root: args.payload.contentTokensRoot,
       content_tokens_file: args.payload.contentTokensFile,
+      shortcut_target_id: args.payload.shortcutTargetId,
       member_keys: memberKeys,
       members_list_snapshot: {
         members_signed_at: snapshot.members_signed_at,

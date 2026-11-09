@@ -598,7 +598,7 @@ where
     pub(crate) async fn update_hashes(&self, id: Uuid, data: UpdateHashes) -> AppResult<AppFile> {
         let file = self.repository.by_id(id, self.owner_id).await?;
 
-        if file.is_dir() {
+        if !file.is_file() {
             return Err(Error::NotFound("file_not_found".to_string()));
         }
 
@@ -676,7 +676,7 @@ where
         // across the board is the old shape.
         let index_is_stale = data.search_tags.root.is_none() && data.search_tags.file.is_none();
 
-        if file.is_dir() {
+        if !file.is_file() {
             return Err(Error::BadRequest("cannot_replace_directory".to_string()));
         }
 
@@ -804,7 +804,7 @@ where
             return Err(Error::NotFound("file_not_found".to_string()));
         }
 
-        if file.is_dir() {
+        if !file.is_file() {
             return Err(Error::BadRequest(
                 "cannot_set_editable_on_directory".to_string(),
             ));

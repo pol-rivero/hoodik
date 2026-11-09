@@ -132,6 +132,7 @@ pub(crate) async fn seed_owned_files<C: entity::ConnectionTrait>(
             trashed_at: ActiveValue::Set(None),
             trash_root_id: ActiveValue::Set(None),
             purge_at: ActiveValue::Set(None),
+            shortcut_target_id: ActiveValue::Set(None),
         });
 
         user_file_rows.push(user_files::ActiveModel {

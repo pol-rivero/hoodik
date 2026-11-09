@@ -100,11 +100,19 @@ pub struct AppFile {
     /// purged.
     #[serde(default)]
     pub purge_at: Option<i64>,
+    /// The file or folder this shortcut points at; `None` on other rows.
+    #[serde(default)]
+    pub shortcut_target_id: Option<Uuid>,
+    /// Mime of the shortcut's target, so the listing can draw a folder or a
+    /// file icon. `None` when the target is in the trash or the caller has no
+    /// access to it: the shortcut is broken for them.
+    #[serde(default)]
+    pub shortcut_target_mime: Option<String>,
 }
 
 impl IntoFilename for AppFile {
     fn filename(&self) -> AppResult<Filename> {
-        if self.is_dir() {
+        if !self.is_file() {
             return Err(Error::BadRequest(
                 "cannot_get_filename_from_dir".to_string(),
             ));
@@ -121,12 +129,17 @@ impl PartialEq for AppFile {
 }
 
 impl AppFile {
+    /// A row with content of its own: neither a folder nor a shortcut.
     pub fn is_file(&self) -> bool {
-        !self.is_dir()
+        !self.is_dir() && !self.is_shortcut()
     }
 
     pub fn is_dir(&self) -> bool {
         &self.mime == "dir"
+    }
+
+    pub fn is_shortcut(&self) -> bool {
+        self.mime == files::SHORTCUT_MIME
     }
 
     /// Whether the caller this row was loaded for may write into it: their
@@ -236,6 +249,11 @@ impl FromQueryResult for AppFile {
             trashed_at: file.trashed_at,
             trash_root_id: file.trash_root_id,
             purge_at: file.purge_at,
+            shortcut_target_id: file.shortcut_target_id,
+            shortcut_target_mime: res
+                .try_get::<Option<String>>("", "shortcut_target_mime")
+                .ok()
+                .flatten(),
         })
     }
 }

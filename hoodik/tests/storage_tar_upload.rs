@@ -57,6 +57,7 @@ fn create_file_json(chunks: &[Vec<u8>], name: &str) -> storage::data::create_fil
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     }
 }
 

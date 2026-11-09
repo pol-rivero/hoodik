@@ -77,6 +77,7 @@ async fn test_non_editable_file_uses_legacy_layout_on_disk() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -170,6 +171,7 @@ async fn test_editable_note_uses_versioned_layout() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -262,6 +264,7 @@ async fn test_set_editable_true_preserves_legacy_then_first_edit_snapshots_as_v1
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -414,6 +417,7 @@ async fn test_set_editable_false_rejects_with_history() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")
@@ -538,6 +542,7 @@ async fn test_set_editable_during_pending_edit_is_409() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")

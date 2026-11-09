@@ -525,7 +525,9 @@
     "user_action_no_id": "Aktions-ID fehlt",
     "user_action_not_found": "Aktion nicht gefunden oder bereits verwendet",
     "user_id_is_required": "Benutzer-ID ist erforderlich",
-    "version_not_found": "Dateiversion nicht gefunden"
+    "version_not_found": "Dateiversion nicht gefunden",
+    "shortcut_target_not_found": "Das Element, auf das die Verknüpfung zeigt, existiert nicht mehr oder ist nicht mehr für Sie freigegeben",
+    "shortcut_target_is_shortcut": "Eine Verknüpfung kann nicht auf eine andere Verknüpfung zeigen"
   },
   "files": {
     "actions": {
@@ -659,7 +661,19 @@
       "presentation": "Präsentation",
       "spreadsheet": "Tabelle",
       "text": "Text",
-      "video": "Video"
+      "video": "Video",
+      "shortcut": "Verknüpfung"
+    },
+    "shortcut": {
+      "add": "Verknüpfung hinzufügen",
+      "addHere": "Hier hinzufügen",
+      "selectTarget": "Wählen Sie, wo die Verknüpfung hinzugefügt werden soll",
+      "addedTitle": "Verknüpfung hinzugefügt",
+      "addedText": "{count} Verknüpfung(en) zu {folder} hinzugefügt",
+      "failedTitle": "Verknüpfung konnte nicht hinzugefügt werden",
+      "broken": "Das ursprüngliche Element ist nicht mehr verfügbar",
+      "nameLabel": "Name der Verknüpfung",
+      "nameRequired": "Geben Sie einen Namen für die Verknüpfung ein"
     }
   },
   "help": {

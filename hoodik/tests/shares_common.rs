@@ -273,6 +273,7 @@ fn make_create_file_with_key(
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     }
 }
 
@@ -303,6 +304,7 @@ pub fn make_create_folder(
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     }
 }
 

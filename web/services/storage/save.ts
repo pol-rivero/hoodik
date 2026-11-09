@@ -404,6 +404,34 @@ export async function createDirInSharedFolder(
   callerUserId: string,
   rosterFolderId?: string
 ): Promise<AppFile> {
+  return createEmptyInSharedFolder(keypair, name, parent, callerUserId, rosterFolderId, {
+    mime: 'dir'
+  })
+}
+
+/** Same fan-out as `createDirInSharedFolder`, for a shortcut row. */
+export async function createShortcutInSharedFolder(
+  keypair: KeyPair,
+  name: string,
+  target: AppFile,
+  parent: AppFile,
+  callerUserId: string,
+  rosterFolderId?: string
+): Promise<AppFile> {
+  return createEmptyInSharedFolder(keypair, name, parent, callerUserId, rosterFolderId, {
+    mime: 'shortcut',
+    shortcutTargetId: target.id
+  })
+}
+
+async function createEmptyInSharedFolder(
+  keypair: KeyPair,
+  name: string,
+  parent: AppFile,
+  callerUserId: string,
+  rosterFolderId: string | undefined,
+  kind: { mime: 'dir' | 'shortcut'; shortcutTargetId?: string }
+): Promise<AppFile> {
   if (!keypair.input || !keypair.publicKey) {
     throw new Error('Cannot create directory without an active keypair')
   }
@@ -424,12 +452,13 @@ export async function createDirInSharedFolder(
       fileKeyHex: cryptfns.uint8.toHex(fileKey),
       nameHash: cryptfns.searchTag(rootKey, name),
       encryptedName: await cryptfns.cipher.encryptString(cipher, name, fileKey),
-      mime: 'dir',
+      mime: kind.mime,
       chunks: 0,
       cipher,
       fileModifiedAt: utcStringFromLocal(new Date()),
       searchTokensRoot: cryptfns.searchTags(rootKey, indexed),
-      searchTokensFile: cryptfns.searchTags(cryptfns.searchFileKey(fileKey), indexed)
+      searchTokensFile: cryptfns.searchTags(cryptfns.searchFileKey(fileKey), indexed),
+      shortcutTargetId: kind.shortcutTargetId
     },
     rosterFolderId,
     trustedFingerprints: trustedFingerprintsStore(),

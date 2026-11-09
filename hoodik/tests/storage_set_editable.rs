@@ -44,6 +44,7 @@ async fn test_set_editable_converts_file_to_note() {
         digest_tokens_file: None,
         cipher: None,
         editable: None, // not editable
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -119,6 +120,7 @@ async fn test_set_editable_can_revert_note_to_regular_file() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -180,6 +182,7 @@ async fn test_set_editable_rejects_directory() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -242,6 +245,7 @@ async fn test_set_editable_requires_editable_field() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()

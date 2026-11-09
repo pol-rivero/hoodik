@@ -144,6 +144,7 @@ export async function create(keypair: KeyPair, unencrypted: CreateFile): Promise
     sha256: unencrypted.sha256,
     blake2b: unencrypted.blake2b,
     editable: unencrypted.editable,
+    shortcut_target_id: unencrypted.shortcut_target_id,
     ...encryptedParts
   }
 

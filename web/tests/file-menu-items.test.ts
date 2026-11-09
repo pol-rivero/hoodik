@@ -53,6 +53,7 @@ describe('fileMenuItems', () => {
       'download',
       'rename',
       'move',
+      'shortcut',
       '|',
       'sharing',
       'details',
@@ -105,6 +106,7 @@ describe('fileMenuItems', () => {
       'open',
       '|',
       'download',
+      'shortcut',
       '|',
       'sharing',
       'details',
@@ -124,6 +126,7 @@ describe('fileMenuItems', () => {
       '|',
       'download',
       'move',
+      'shortcut',
       '|',
       'sharing',
       'details',
@@ -168,6 +171,7 @@ describe('fileMenuItems', () => {
       '|',
       'download',
       'move',
+      'shortcut',
       '|',
       'details',
       '|',
@@ -192,13 +196,60 @@ describe('fileMenuItems', () => {
   })
 })
 
+describe('shortcuts', () => {
+  const shortcut = (overrides: Partial<AppFile> = {}) =>
+    row({
+      id: 's1',
+      name: 'Projects',
+      mime: 'shortcut',
+      size: undefined,
+      shortcut_target_id: 'd1',
+      shortcut_target_mime: 'dir',
+      ...overrides
+    })
+
+  it('opens a folder shortcut in the target folder', () => {
+    expect(fileOpenRoute(shortcut())).toEqual({ name: 'files', params: { file_id: 'd1' } })
+  })
+
+  it('resolves a file shortcut through its target', () => {
+    const toFile = shortcut({ shortcut_target_id: 'f1', shortcut_target_mime: 'application/pdf' })
+    expect(fileOpenRoute(toFile)).toEqual({ name: 'open-shortcut', params: { id: 'f1' } })
+  })
+
+  it('cannot open a broken shortcut', () => {
+    expect(fileOpenRoute(shortcut({ shortcut_target_mime: null }))).toBeNull()
+  })
+
+  it('offers no download, sharing, fork or nested shortcut on a shortcut', () => {
+    const list = actions(fileMenuItems(shortcut(), ctx()))
+    expect(list).toEqual(['open', '|', 'rename', 'move', '|', 'details', '|', 'remove'])
+
+    const shared = shortcut({ is_owner: false, share_role: 'co-owner' })
+    expect(actions(fileMenuItems(shared, ctx()))).not.toContain('fork')
+  })
+
+  it('offers Add shortcut on a finished file and a folder', () => {
+    expect(actions(fileMenuItems(row(), ctx()))).toContain('shortcut')
+    expect(actions(fileMenuItems(folder(), ctx()))).toContain('shortcut')
+  })
+})
+
 describe('selectionMenuItems', () => {
   const selCtx = { t, isMac: false }
 
   it('heads the menu with a disabled count, then download, move and delete', () => {
     const entries = selectionMenuItems([row(), row({ id: 'f2' })], selCtx)
 
-    expect(actions(entries)).toEqual(['selection-count', '|', 'download-many', 'move-all', '|', 'remove-all'])
+    expect(actions(entries)).toEqual([
+      'selection-count',
+      '|',
+      'download-many',
+      'move-all',
+      'shortcut-all',
+      '|',
+      'remove-all'
+    ])
     expect(entries[0]).toEqual({
       kind: 'label',
       id: 'selection-count',
@@ -244,6 +295,14 @@ describe('selectionMenuItems', () => {
 
     const mixed = selectionMenuItems([row(), shared[0]], selCtx).at(-1)
     expect(mixed).toMatchObject({ action: 'remove-all', label: 'Move to trash', danger: true })
+  })
+
+  it('offers shortcuts to readable rows, but not to shortcuts or unfinished uploads', () => {
+    const reader = row({ id: 'f2', is_owner: false, share_role: 'reader' })
+    expect(actions(selectionMenuItems([row(), reader], selCtx))).toContain('shortcut-all')
+
+    const link = row({ id: 'f3', mime: 'shortcut', shortcut_target_id: 'f1', shortcut_target_mime: 'dir' })
+    expect(actions(selectionMenuItems([row(), link], selCtx))).not.toContain('shortcut-all')
   })
 
   it('drops Delete when the browser hides it', () => {

@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { mdiFileOutline, mdiFolder } from '@mdi/js'
+import {
+  mdiFileLinkOutline,
+  mdiFileOutline,
+  mdiFolder,
+  mdiFolderArrowRight,
+  mdiLinkVariantOff
+} from '@mdi/js'
 import BaseIcon from '@/components/ui/BaseIcon.vue'
 
 /**
@@ -9,6 +15,8 @@ import BaseIcon from '@/components/ui/BaseIcon.vue'
  */
 const props = defineProps<{
   mime?: string
+  /** For a shortcut: its target's mime, null when the target is gone. */
+  targetMime?: string | null
   /** Overrides the generic folder/file glyph. */
   path?: string
   /** Size + spacing classes, matching the thumbnail's. */
@@ -18,7 +26,14 @@ const props = defineProps<{
   size?: number
 }>()
 
-const iconPath = computed(() => props.path ?? (props.mime === 'dir' ? mdiFolder : mdiFileOutline))
+const mimeIcon = () => {
+  if (props.mime === 'dir') return mdiFolder
+  if (props.mime !== 'shortcut') return mdiFileOutline
+  if (!props.targetMime) return mdiLinkVariantOff
+  return props.targetMime === 'dir' ? mdiFolderArrowRight : mdiFileLinkOutline
+}
+
+const iconPath = computed(() => props.path ?? mimeIcon())
 </script>
 
 <template>

@@ -179,7 +179,10 @@ pub(crate) async fn purge_root_with<S: ChunkStore>(
         .await?;
     tx.commit().await?;
 
-    for file in group.iter().filter(|f| f.mime != "dir") {
+    for file in group
+        .iter()
+        .filter(|f| f.mime != "dir" && f.mime != files::SHORTCUT_MIME)
+    {
         store.purge_file(file).await?;
     }
 

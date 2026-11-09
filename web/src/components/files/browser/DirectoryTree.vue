@@ -28,6 +28,9 @@ const props = withDefaults(
     expandedIds?: Set<string>
     depth?: number
     shared?: boolean
+    /** Label and icon of each row's pick button; "Move" by default. */
+    selectLabel?: string
+    selectIcon?: string
   }>(),
   {
     mode: 'select',
@@ -167,9 +170,9 @@ watch(
         </div>
         <div class="text-right whitespace-nowrap">
           <BaseButtonConfirm
-            :icon="mdiFolderMove"
+            :icon="selectIcon ?? mdiFolderMove"
             @confirm="select(parent)"
-            :label="$t('common.move')"
+            :label="selectLabel ?? $t('common.move')"
             :confirm-label="$t('common.confirm')"
             :xs="true"
             :disabled="disabled"
@@ -185,6 +188,8 @@ watch(
         :Storage="Storage"
         :parent="item"
         :shared="shared"
+        :select-label="selectLabel"
+        :select-icon="selectIcon"
         mode="select"
         @select="select"
       />
@@ -215,6 +220,8 @@ watch(
           :Storage="Storage"
           :parent="item"
           shared
+          :select-label="selectLabel"
+          :select-icon="selectIcon"
           mode="select"
           @select="select"
         />

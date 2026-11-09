@@ -525,7 +525,9 @@
     "user_action_no_id": "L’identifiant de l’action est manquant",
     "user_action_not_found": "Action introuvable ou déjà utilisée",
     "user_id_is_required": "L’identifiant de l’utilisateur est requis",
-    "version_not_found": "Version du fichier introuvable"
+    "version_not_found": "Version du fichier introuvable",
+    "shortcut_target_not_found": "L’élément ciblé par le raccourci n’existe plus ou n’est plus partagé avec vous",
+    "shortcut_target_is_shortcut": "Un raccourci ne peut pas pointer vers un autre raccourci"
   },
   "files": {
     "actions": {
@@ -659,7 +661,19 @@
       "presentation": "Présentation",
       "spreadsheet": "Feuille de calcul",
       "text": "Texte",
-      "video": "Vidéo"
+      "video": "Vidéo",
+      "shortcut": "Raccourci"
+    },
+    "shortcut": {
+      "add": "Ajouter un raccourci",
+      "addHere": "Ajouter ici",
+      "selectTarget": "Choisissez où ajouter le raccourci",
+      "addedTitle": "Raccourci ajouté",
+      "addedText": "{count} raccourci(s) ajouté(s) dans {folder}",
+      "failedTitle": "Impossible d’ajouter le raccourci",
+      "broken": "L’élément d’origine n’est plus disponible",
+      "nameLabel": "Nom du raccourci",
+      "nameRequired": "Saisissez un nom pour le raccourci"
     }
   },
   "help": {

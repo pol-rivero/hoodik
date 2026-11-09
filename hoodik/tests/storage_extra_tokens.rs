@@ -34,6 +34,7 @@ fn create_payload(name_hash: &str, name_tag: &str) -> CreateFile {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     }
 }
 

@@ -3,6 +3,7 @@ import CreateDirectoryModal from '@/components/files/modals/CreateDirectoryModal
 import CreateFileModal from '@/components/files/modals/CreateFileModal.vue'
 import DeleteMultipleModal from '@/components/files/modals/DeleteMultipleModal.vue'
 import MoveMultipleModal from '@/components/files/modals/MoveMultipleModal.vue'
+import AddShortcutModal from '@/components/files/modals/AddShortcutModal.vue'
 import MoveConfirmHost from '@/components/files/modals/MoveConfirmHost.vue'
 import UploadButton from '@/components/files/browser/UploadButton.vue'
 import DetailsModal from '@/components/files/modals/DetailsModal.vue'
@@ -24,7 +25,7 @@ import {
   ForkAbortedError
 } from '!/shares'
 import type { ForkProgress } from '!/shares'
-import { SHARED_WITH_ME_DIR_ID } from '!/storage'
+import { SHARED_WITH_ME_DIR_ID, isShortcut } from '!/storage'
 import { concurrencyLimit, errorNotification, notification } from '!/index'
 import { FILES_PREPARED_AT_ONE_TIME } from '!/constants'
 import * as meta from '!/storage/meta'
@@ -70,6 +71,7 @@ const openFolderWindow = ref(false)
 const isModalCreateDirActive = ref(false)
 const isModalCreateFileActive = ref(false)
 const isModalMoveMultipleActive = ref(false)
+const isModalAddShortcutActive = ref(false)
 const isModalDeleteMultipleActive = ref(false)
 
 const detailsFileId = ref<string | undefined>()
@@ -128,6 +130,13 @@ const rename = (file: AppFile) => {
  */
 const moveAll = () => {
   isModalMoveMultipleActive.value = true
+}
+
+/**
+ * Opens a modal to pick the folder that gets shortcuts to the selected files
+ */
+const shortcutAll = () => {
+  isModalAddShortcutActive.value = true
 }
 
 /**
@@ -285,7 +294,9 @@ const confirmLeave = async () => {
 const downloadMany = async () => {
   const selected = Storage.selected.filter(
     (file) =>
-      file.id !== SHARED_WITH_ME_DIR_ID && (file.mime === 'dir' || !!file.finished_upload_at)
+      file.id !== SHARED_WITH_ME_DIR_ID &&
+      !isShortcut(file) &&
+      (file.mime === 'dir' || !!file.finished_upload_at)
   )
 
   if (selected.length > 1 && selected.some((file) => file.mime === 'dir')) {
@@ -641,6 +652,12 @@ watch(
     :authenticated="props.authenticated"
   />
   <MoveConfirmHost />
+  <AddShortcutModal
+    v-model="isModalAddShortcutActive"
+    :Storage="Storage"
+    :kp="Crypto.keypair"
+    :authenticated="props.authenticated"
+  />
 
   <RevokeConfirmModal
     v-if="leaveConfirmFile"
@@ -686,6 +703,7 @@ watch(
       'deselect-all': Storage.deselectAll,
       'download-many': downloadMany,
       'move-all': moveAll,
+      'shortcut-all': shortcutAll,
       'remove-all': removeAll,
       'select-all': Storage.selectAll,
       'select-one': Storage.selectOne,

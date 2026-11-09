@@ -11,6 +11,7 @@ import {
   mdiFolderOpenOutline,
   mdiFolderPlusOutline,
   mdiFolderZipOutline,
+  mdiLinkVariantPlus,
   mdiInformationOutline,
   mdiOpenInNew,
   mdiPencil,
@@ -20,7 +21,13 @@ import {
 import type { RouteLocationRaw } from 'vue-router'
 import type { AppFile } from 'types'
 import { isMarkdownFile, isPreviewable } from '!/preview'
-import { SHARED_WITH_ME_DIR_ID, canWriteToShared } from '!/storage'
+import {
+  SHARED_WITH_ME_DIR_ID,
+  canWriteToShared,
+  isBrokenShortcut,
+  isFolderShortcut,
+  isShortcut
+} from '!/storage'
 import type {
   ContextMenuEntry,
   ContextMenuItem,
@@ -38,6 +45,7 @@ import type {
  * | `download` | `on.download(file)`                                          |
  * | `rename`   | `on.rename(file)`                                            |
  * | `move`     | none yet: select only this file, then `on['move-all']()`     |
+ * | `shortcut` | none yet: select only this file, then `on['shortcut-all']()` |
  * | `sharing`  | `on.sharing(file)`                                           |
  * | `details`  | `on.details(file)`                                           |
  * | `fork`     | `on.fork(file)`                                              |
@@ -49,6 +57,7 @@ export type FileMenuAction =
   | 'download'
   | 'rename'
   | 'move'
+  | 'shortcut'
   | 'sharing'
   | 'details'
   | 'fork'
@@ -57,9 +66,10 @@ export type FileMenuAction =
 
 /**
  * Actions on the current selection (`Storage.selected`), dispatched with no
- * arguments: `on['download-many']()`, `on['move-all']()`, `on['remove-all']()`.
+ * arguments: `on['download-many']()`, `on['move-all']()`, `on['shortcut-all']()`,
+ * `on['remove-all']()`.
  */
-export type SelectionMenuAction = 'download-many' | 'move-all' | 'remove-all'
+export type SelectionMenuAction = 'download-many' | 'move-all' | 'shortcut-all' | 'remove-all'
 
 /**
  * Actions on the folder being browsed, dispatched with no arguments:
@@ -112,6 +122,7 @@ export interface FileCapabilities {
   download: boolean
   rename: boolean
   move: boolean
+  shortcut: boolean
   sharing: boolean
   details: boolean
   fork: boolean
@@ -134,6 +145,10 @@ const shortcuts = (ctx: CommonMenuContext) =>
 /** A file whose content hasn't fully landed yet, so it can't be read or downloaded. */
 const isContentPending = (file: AppFile) => file.mime !== 'dir' && !file.finished_upload_at
 
+/** Anything readable and settled can be pointed at, except another shortcut. */
+export const canAddShortcut = (file: AppFile) =>
+  !isSyntheticRoot(file) && !isShortcut(file) && !isContentPending(file)
+
 /**
  * The synthetic "Shared with me" root has no row on disk: its id is a
  * client-only marker that would 400 every storage / shares endpoint it
@@ -155,6 +170,11 @@ export function canWriteMarkdown(file: AppFile): boolean {
  */
 export function fileOpenRoute(file: AppFile): RouteLocationRaw | null {
   if (file.mime === 'dir') return { name: 'files', params: { file_id: file.id } }
+  if (isShortcut(file)) {
+    if (isBrokenShortcut(file) || !file.shortcut_target_id) return null
+    if (isFolderShortcut(file)) return { name: 'files', params: { file_id: file.shortcut_target_id } }
+    return { name: 'open-shortcut', params: { id: file.shortcut_target_id } }
+  }
   if (file.finished_upload_at && isMarkdownFile(file) && canWriteMarkdown(file)) {
     return { name: 'notes', params: { id: file.id } }
   }
@@ -208,6 +228,7 @@ export function fileCapabilities(file: AppFile, ctx: FileCapabilityContext): Fil
       download: false,
       rename: false,
       move: false,
+      shortcut: false,
       sharing: false,
       details: false,
       fork: false,
@@ -219,19 +240,21 @@ export function fileCapabilities(file: AppFile, ctx: FileCapabilityContext): Fil
   const isDir = file.mime === 'dir'
   const settled = isDir || !!file.finished_upload_at
   const recipient = file.is_owner === false
+  const shortcut = isShortcut(file)
 
   return {
     open: fileOpenRoute(file) !== null,
-    preview: isPreviewable(file),
-    download: settled,
+    preview: !shortcut && isPreviewable(file),
+    download: settled && !shortcut,
     rename: !!file.is_owner && settled,
     // Moving needs write access on the source; readers get a 403.
     move: !recipient || canWriteToShared(file),
+    shortcut: canAddShortcut(file),
     // Every member of a share may inspect its roster; the modal disables
     // mutation for callers without `can_reshare`. Incoming shares are
     // already uploaded on the owner's side, so only owned rows wait for
     // the upload to finish.
-    sharing: ctx.sharingEnabled && (recipient || settled),
+    sharing: ctx.sharingEnabled && (recipient || settled) && !shortcut,
     details: true,
     // Co-owner-only: re-encrypts a copy under the caller's key so a
     // revocation can't take it away. Already-mine rows don't need it.
@@ -240,7 +263,8 @@ export function fileCapabilities(file: AppFile, ctx: FileCapabilityContext): Fil
       ctx.forkEnabled &&
       recipient &&
       file.share_role === 'co-owner' &&
-      !isDir,
+      !isDir &&
+      !shortcut,
     // Recipients drop only their own access; trashing stays an owner action.
     leave: recipient,
     remove: !ctx.hideDelete && !recipient
@@ -284,7 +308,7 @@ function item<A extends string>(
 export function fileMenuItems(file: AppFile, ctx: FileMenuContext): ContextMenuEntry<FileMenuAction>[] {
   const { t } = ctx
   const can = fileCapabilities(file, ctx)
-  const isDir = file.mime === 'dir'
+  const isDir = file.mime === 'dir' || isFolderShortcut(file)
   const open = can.open
     ? [item<FileMenuAction>('open', t('common.open'), isDir ? mdiFolderOpenOutline : mdiOpenInNew)]
     : []
@@ -300,6 +324,9 @@ export function fileMenuItems(file: AppFile, ctx: FileMenuContext): ContextMenuE
         : []),
       ...(can.move
         ? [item<FileMenuAction>('move', t('files.contextMenu.move'), mdiFolderMove)]
+        : []),
+      ...(can.shortcut
+        ? [item<FileMenuAction>('shortcut', t('files.shortcut.add'), mdiLinkVariantPlus)]
         : [])
     ],
     [
@@ -352,6 +379,7 @@ export function selectionMenuItems(
   const canMoveAll = files.every(
     (file) => file.is_owner !== false || canWriteToShared(file)
   )
+  const canShortcutAll = files.every(canAddShortcut)
 
   const header: ContextMenuLabel = {
     kind: 'label',
@@ -377,6 +405,9 @@ export function selectionMenuItems(
         : []),
       ...(!hasSyntheticRoot && canMoveAll
         ? [item<SelectionMenuAction>('move-all', t('files.contextMenu.move'), mdiFolderMove)]
+        : []),
+      ...(canShortcutAll
+        ? [item<SelectionMenuAction>('shortcut-all', t('files.shortcut.add'), mdiLinkVariantPlus)]
         : [])
     ],
     [

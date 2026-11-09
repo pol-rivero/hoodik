@@ -2,6 +2,8 @@
 import type { AppFile } from 'types'
 import FileThumbnail from '@/components/files/FileThumbnail.vue'
 import FileIconTile from '@/components/files/FileIconTile.vue'
+import { fileOpenRoute } from '@/components/files/browser/fileMenuItems'
+import { isShortcut } from '!/storage'
 import { computed } from 'vue'
 import { formatSize } from '!'
 import { isMarkdownFile } from '!/preview'
@@ -25,6 +27,15 @@ const canWrite = computed(() => {
 const url = computed(() => {
   if (props.file.mime === 'dir') {
     return { name: 'files', params: { file_id: props.file.id } }
+  }
+
+  if (isShortcut(props.file)) {
+    return (
+      fileOpenRoute(props.file) ?? {
+        name: 'files',
+        params: { file_id: props.file.file_id ?? undefined }
+      }
+    )
   }
 
   // A file still uploading has no content to render — keep the result in
@@ -61,7 +72,12 @@ const fileSize = computed(() => {
   >
     <div class="shrink-0 text-brownish-300 dark:text-brownish-50">
       <FileThumbnail :file="props.file" img-class="w-10 h-10 rounded-md">
-        <FileIconTile :mime="props.file.mime" tile-class="w-10 h-10" :size="24" />
+        <FileIconTile
+          :mime="props.file.mime"
+          :target-mime="props.file.shortcut_target_mime"
+          tile-class="w-10 h-10"
+          :size="24"
+        />
       </FileThumbnail>
     </div>
     <div class="min-w-0 flex-1 text-left">

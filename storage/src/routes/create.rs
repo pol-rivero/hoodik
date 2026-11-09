@@ -45,6 +45,10 @@ pub(crate) async fn create(
 
     let repository = Repository::new(&connection);
 
+    if let Some(target_id) = create_file.shortcut_target_id.clone().unwrap() {
+        entity::permission::require_shortcut_target(&connection, target_id, claims.sub).await?;
+    }
+
     if let Some(quota) = claims.get_quota(&context).await {
         let used_space = repository.query(claims.sub).used_space().await? + file_size;
 

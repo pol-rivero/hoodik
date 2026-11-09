@@ -93,6 +93,7 @@ async fn create_file(app: &impl TestApp, jwt: &actix_web::cookie::Cookie<'static
         digest_tokens_file: None,
         cipher: Some("aegis256".to_string()),
         editable: None,
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")

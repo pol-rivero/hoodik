@@ -502,6 +502,7 @@ export interface UploadMultiKeyBody {
   search_tokens_file?: string[]
   content_tokens_root?: string[]
   content_tokens_file?: string[]
+  shortcut_target_id?: string
   member_keys: UploadMultiKeyMember[]
   members_list_snapshot: UploadMultiKeySnapshot
   event_signature: string

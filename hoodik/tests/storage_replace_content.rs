@@ -42,6 +42,7 @@ async fn test_replace_content_rejects_non_editable_file() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -100,6 +101,7 @@ async fn test_replace_content_rejects_directory() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -160,6 +162,7 @@ async fn test_replace_content_validates_size_and_chunks() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -235,6 +238,7 @@ async fn test_content_save_without_tags_enrols_the_file_for_reindex() {
         digest_tokens_file: Some(vec!["dd02:1".to_string()]),
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -336,6 +340,7 @@ async fn test_content_save_with_tags_stays_indexed() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()

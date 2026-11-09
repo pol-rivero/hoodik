@@ -171,6 +171,18 @@ where
             "has_thumbnail",
         );
 
+        // Only a target the caller can still open counts; anything else
+        // leaves the mime NULL and the shortcut reads as broken.
+        selector = selector.expr_as(
+            Expr::cust_with_values(
+                "(SELECT t.mime FROM files t \
+                 INNER JOIN user_files tu ON tu.file_id = t.id AND tu.user_id = $1 \
+                 WHERE t.id = files.shortcut_target_id AND t.trashed_at IS NULL)",
+                [user_id],
+            ),
+            "shortcut_target_mime",
+        );
+
         entity::join::add_columns_with_prefix::<_, user_files::Entity>(&mut selector, "user_file");
         entity::join::add_columns_with_prefix::<_, links::Entity>(&mut selector, "link");
 

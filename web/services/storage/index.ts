@@ -6,6 +6,7 @@ import * as download from './download'
 import { downloadAndDecrypt } from './download/sync'
 import { rankSearchResults } from './rank'
 import { emitFileTreeChange } from './events'
+import { SHORTCUT_MIME, isFolderLike } from './shortcut'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import * as cryptfns from '../cryptfns'
@@ -34,6 +35,7 @@ export { meta, upload, download, queue }
  */
 import { SHARED_WITH_ME_DIR_ID } from '../constants'
 export { SHARED_WITH_ME_DIR_ID }
+export * from './shortcut'
 
 /**
  * Whether the caller may write into a folder shared with them. Editors and
@@ -195,7 +197,7 @@ export const store = defineStore('files', () => {
 
     const directories = innerSort(
       _items.value.filter((item) => {
-        if (item.mime !== 'dir') {
+        if (!isFolderLike(item)) {
           return false
         }
 
@@ -214,7 +216,7 @@ export const store = defineStore('files', () => {
 
     const files = innerSort(
       _items.value.filter((item) => {
-        if (item.mime === 'dir') {
+        if (isFolderLike(item)) {
           return false
         }
 
@@ -887,6 +889,51 @@ export const store = defineStore('files', () => {
   }
 
   /**
+   * Add a shortcut to `target` inside `dirId` (the root when undefined),
+   * named `name`, or after the target when no name is given. The name is the
+   * shortcut's own and can be renamed apart from the target. Destinations inside a shared tree go through the
+   * multi-key create, like `createDir`, so every member can read the name.
+   */
+  async function createShortcut(
+    keypair: KeyPair,
+    target: AppFile,
+    dirId?: string,
+    callerUserId?: string,
+    name: string = target.name
+  ): Promise<AppFile> {
+    const roster = await writeRosterId(dirId)
+    let shortcut: AppFile
+
+    if (dirId && roster != null) {
+      if (!callerUserId) {
+        throw new Error('Cannot create a shortcut in a shared folder without caller id')
+      }
+      const parent = getItem(dirId) ?? (await meta.get(keypair, dirId))
+      const save = await import('./save')
+      shortcut = await save.createShortcutInSharedFolder(
+        keypair,
+        name,
+        target,
+        parent,
+        callerUserId,
+        roster
+      )
+    } else {
+      shortcut = await meta.create(keypair, {
+        name,
+        mime: SHORTCUT_MIME,
+        file_id: dirId,
+        file_modified_at: utcStringFromLocal(new Date()),
+        cipher: cryptfns.cipher.defaultCipher(),
+        shortcut_target_id: target.id
+      })
+    }
+
+    upsertItem(shortcut)
+    return shortcut
+  }
+
+  /**
    * Rename a file or directory. For rows the caller doesn't own (incoming
    * shares) the server returns the row keyed against its real parent, which
    * is either `null` or a folder the caller has no row for — surfacing it
@@ -984,6 +1031,7 @@ export const store = defineStore('files', () => {
     addItem,
     bumpSharedWithCount,
     createDir,
+    createShortcut,
     currentDirId,
     decryptItem,
     deselectAll,

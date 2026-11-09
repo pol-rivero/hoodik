@@ -60,6 +60,7 @@ async fn test_creating_file_and_uploading_chunks() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -194,6 +195,7 @@ async fn test_transfer_token_upload_and_download() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -389,6 +391,7 @@ async fn test_download_tar_archive() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -552,6 +555,7 @@ async fn test_replace_content_atomic_edit() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -709,6 +713,7 @@ async fn test_replace_content_concurrent_returns_409() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -819,6 +824,7 @@ async fn test_versions_list_and_restore() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")
@@ -998,6 +1004,7 @@ async fn test_fork_creates_independent_copy() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")
@@ -1315,6 +1322,7 @@ async fn test_versioned_download_missing_chunk_returns_404() {
         digest_tokens_file: None,
         cipher: None,
         editable: Some(true),
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")
@@ -1446,6 +1454,7 @@ async fn create_three_chunk_file(
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -1537,6 +1546,7 @@ async fn test_download_refuses_a_stranger_after_the_owner_warmed_the_cache() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -1618,6 +1628,7 @@ async fn reindex_fixture_file(
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()

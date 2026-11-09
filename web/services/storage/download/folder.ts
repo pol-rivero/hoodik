@@ -1,6 +1,7 @@
 import { BlobWriter, ZipWriter } from '@zip.js/zip.js'
 import * as logger from '!/logger'
 import * as meta from '../meta'
+import { hasContent } from '../shortcut'
 import { downloadChunk } from './sync'
 
 import type { AppFile, KeyPair } from 'types'
@@ -76,7 +77,7 @@ function uniqueSegment(name: string, taken: Set<string>): string {
 }
 
 function isDownloadable(file: AppFile): boolean {
-  return file.mime === 'dir' || !!file.finished_upload_at
+  return file.mime === 'dir' || (hasContent(file) && !!file.finished_upload_at)
 }
 
 /**

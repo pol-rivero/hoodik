@@ -27,7 +27,7 @@ const isDir = computed(() => {
 
 const size = computed(() => {
   if (!file.value) return '-'
-  if (file.value.mime === 'dir') return '-'
+  if (!file.value.size) return '-'
   return formatSize(file.value.size)
 })
 

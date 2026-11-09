@@ -43,6 +43,7 @@ fn sized_create(name_hash: &str, chunk_lens: &[usize]) -> CreateFile {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     }
 }
 

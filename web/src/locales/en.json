@@ -525,7 +525,9 @@
     "user_action_no_id": "Action id is missing",
     "user_action_not_found": "Action not found or already used",
     "user_id_is_required": "User id is required",
-    "version_not_found": "File version not found"
+    "version_not_found": "File version not found",
+    "shortcut_target_not_found": "The item the shortcut points to no longer exists or isn’t shared with you",
+    "shortcut_target_is_shortcut": "A shortcut cannot point to another shortcut"
   },
   "files": {
     "actions": {
@@ -659,7 +661,19 @@
       "presentation": "Presentation",
       "spreadsheet": "Spreadsheet",
       "text": "Text",
-      "video": "Video"
+      "video": "Video",
+      "shortcut": "Shortcut"
+    },
+    "shortcut": {
+      "add": "Add shortcut",
+      "addHere": "Add here",
+      "selectTarget": "Choose where to add the shortcut",
+      "addedTitle": "Shortcut added",
+      "addedText": "Added {count} shortcut(s) to {folder}",
+      "failedTitle": "Could not add shortcut",
+      "broken": "The original item is no longer available",
+      "nameLabel": "Shortcut name",
+      "nameRequired": "Enter a name for the shortcut"
     }
   },
   "help": {

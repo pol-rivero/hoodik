@@ -39,6 +39,7 @@ fn create_file_with_thumbnail(name_hash: &str) -> storage::data::create_file::Cr
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     }
 }
 

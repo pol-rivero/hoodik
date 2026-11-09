@@ -96,6 +96,9 @@ export interface CreateFile extends AppFileUnencryptedPart {
    * Defaults to `false` for regular uploads.
    */
   editable?: boolean
+
+  /** Target of a shortcut; required when `mime` is `'shortcut'`. */
+  shortcut_target_id?: string
 }
 
 export interface EncryptedCreateFile {
@@ -180,4 +183,7 @@ export interface EncryptedCreateFile {
    * Whether this file's content can be replaced (markdown notes).
    */
   editable?: boolean
+
+  /** Target of a shortcut; required when `mime` is `'shortcut'`. */
+  shortcut_target_id?: string
 }

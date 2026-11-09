@@ -112,6 +112,7 @@ export interface SharedFolderFilePayload {
   searchTokensFile?: string[]
   contentTokensRoot?: string[]
   contentTokensFile?: string[]
+  shortcutTargetId?: string
 }
 
 export interface UploadIntoSharedFolderArgs {

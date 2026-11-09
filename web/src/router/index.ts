@@ -43,6 +43,15 @@ const router = createRouter({
       component: () => import('../views/files/FileView.vue')
     },
     {
+      path: '/o/:id',
+      name: 'open-shortcut',
+      meta: {
+        files: true,
+        title: 'nav.title.myFiles'
+      },
+      component: () => import('../views/files/OpenShortcutView.vue')
+    },
+    {
       path: '/notes/:id?',
       name: 'notes',
       meta: {

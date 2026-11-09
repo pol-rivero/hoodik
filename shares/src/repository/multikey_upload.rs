@@ -128,6 +128,12 @@ impl Repository<'_> {
             return Err(Error::Forbidden("forbidden_not_writer".to_string()));
         }
 
+        let shortcut_target_id = entity::option_string_to_uuid(body.shortcut_target_id.clone());
+        if let Some(target_id) = shortcut_target_id {
+            entity::permission::require_shortcut_target(&self.context.db, target_id, caller.id)
+                .await?;
+        }
+
         let folder = files::Entity::find_by_id(parent_id)
             .one(&self.context.db)
             .await?
@@ -703,6 +709,8 @@ fn build_new_file(
     parent_id: Uuid,
     now: i64,
 ) -> files::ActiveModel {
+    let shortcut_target_id = entity::option_string_to_uuid(body.shortcut_target_id.clone());
+    let is_shortcut = shortcut_target_id.is_some();
     files::ActiveModel {
         id: ActiveValue::Set(new_file_id),
         name_hash: ActiveValue::Set(body.name_hash.clone().unwrap_or_default()),
@@ -714,8 +722,8 @@ fn build_new_file(
                 .unwrap_or_else(|| "text/plain".to_string()),
         ),
         size: ActiveValue::Set(body.size),
-        chunks: ActiveValue::Set(body.chunks),
-        chunks_stored: ActiveValue::Set(Some(0)),
+        chunks: ActiveValue::Set(if is_shortcut { None } else { body.chunks }),
+        chunks_stored: ActiveValue::Set(if is_shortcut { None } else { Some(0) }),
         file_id: ActiveValue::Set(Some(parent_id)),
         md5: ActiveValue::Set(body.md5.clone()),
         sha1: ActiveValue::Set(body.sha1.clone()),
@@ -732,7 +740,7 @@ fn build_new_file(
             now,
         )),
         created_at: ActiveValue::Set(now),
-        finished_upload_at: ActiveValue::Set(None),
+        finished_upload_at: ActiveValue::Set(is_shortcut.then_some(now)),
         active_version: ActiveValue::Set(1),
         pending_version: ActiveValue::Set(None),
         pending_chunks: ActiveValue::Set(None),
@@ -744,6 +752,7 @@ fn build_new_file(
         trashed_at: ActiveValue::Set(None),
         trash_root_id: ActiveValue::Set(None),
         purge_at: ActiveValue::Set(None),
+        shortcut_target_id: ActiveValue::Set(shortcut_target_id),
     }
 }
 

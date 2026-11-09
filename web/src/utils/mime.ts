@@ -30,6 +30,7 @@ export function prettyMime(mime: string | undefined | null): string {
 
   const t = i18n.global.t
   if (mime === 'dir') return t('files.type.folder')
+  if (mime === 'shortcut') return t('files.type.shortcut')
 
   const [type, subtype = ''] = mime.split('/')
 

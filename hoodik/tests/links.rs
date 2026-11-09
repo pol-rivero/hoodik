@@ -55,6 +55,7 @@ async fn test_creating_and_downloading_link() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -214,6 +215,7 @@ async fn test_link_download_decrypts_aegis256_file() {
         digest_tokens_file: None,
         cipher: Some("aegis256".to_string()),
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -378,6 +380,7 @@ async fn test_link_download_missing_chunk_returns_404() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
 
     let req = test::TestRequest::post()
@@ -503,6 +506,7 @@ async fn test_link_chunk_urls_refuse_an_expired_or_unknown_link() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")
@@ -626,6 +630,7 @@ async fn test_link_chunk_urls_refuse_when_the_provider_has_no_urls() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")

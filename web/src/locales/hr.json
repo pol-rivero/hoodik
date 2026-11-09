@@ -525,7 +525,9 @@
     "user_action_no_id": "Nedostaje ID radnje",
     "user_action_not_found": "Radnja nije pronađena ili je već iskorištena",
     "user_id_is_required": "ID korisnika je obavezan",
-    "version_not_found": "Verzija datoteke nije pronađena"
+    "version_not_found": "Verzija datoteke nije pronađena",
+    "shortcut_target_not_found": "Stavka na koju prečac pokazuje više ne postoji ili više nije podijeljena s vama",
+    "shortcut_target_is_shortcut": "Prečac ne može pokazivati na drugi prečac"
   },
   "files": {
     "actions": {
@@ -659,7 +661,19 @@
       "presentation": "Prezentacija",
       "spreadsheet": "Tablica",
       "text": "Tekst",
-      "video": "Video"
+      "video": "Video",
+      "shortcut": "Prečac"
+    },
+    "shortcut": {
+      "add": "Dodaj prečac",
+      "addHere": "Dodaj ovdje",
+      "selectTarget": "Odaberite gdje dodati prečac",
+      "addedTitle": "Prečac dodan",
+      "addedText": "Dodano prečaca: {count} u {folder}",
+      "failedTitle": "Nije moguće dodati prečac",
+      "broken": "Izvorna stavka više nije dostupna",
+      "nameLabel": "Naziv prečaca",
+      "nameRequired": "Unesite naziv prečaca"
     }
   },
   "help": {

@@ -63,6 +63,7 @@ async fn test_json_compresses_and_ciphertext_stays_identity() {
         digest_tokens_file: None,
         cipher: None,
         editable: None,
+        shortcut_target_id: None,
     };
     let req = test::TestRequest::post()
         .uri("/api/storage")

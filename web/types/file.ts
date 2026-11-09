@@ -182,6 +182,15 @@ export interface EncryptedAppFile extends AppFileEncryptedPart {
    * purge is already under way and the item can no longer be restored.
    */
   purge_at?: number | null
+
+  /** The file or folder a `mime: 'shortcut'` row points at. */
+  shortcut_target_id?: string | null
+
+  /**
+   * Mime of the shortcut's target. Null when the target is in the trash or
+   * out of the caller's reach, so the shortcut is broken.
+   */
+  shortcut_target_mime?: string | null
 }
 
 /**
